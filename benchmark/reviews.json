@@ -1,0 +1,1318 @@
+{
+  "v1": {
+    "NB-043": {
+      "source": {
+        "accept": true,
+        "reason": "The affine call binds xs and ws to x and w; the shown assignments yield [10,10] and [10,2,10]. Reversing ws axes leaves [10,2,10], so the matmul contracts 10 against 2, matching the error. The hint explicitly limits these shapes to saved assignments rather than asserting live array identity."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly links the batched weight transpose to contraction of extents 10 and 2, while preserving the saved-state limitation."
+      }
+    },
+    "NB-056": {
+      "source": {
+        "accept": true,
+        "reason": "The marked jnp.dot(x,y) expression, the dot frame forwarding a,b, and the ordered lhs/rhs shape error support relating x's final contracted extent 3 to y's penultimate contracted extent 2. The hint correctly limits this to contracted axes rather than claiming runtime full shapes."
+      },
+      "key": {
+        "accept": true,
+        "reason": "The dot contraction rule and left/right extents match the key; the recorded inner dot_general call forwards a and b in order."
+      }
+    },
+    "NB-055": {
+      "source": {
+        "accept": true,
+        "reason": "The marked lambda supplies config['NUM_ACTORS'] as the single reshape dimension, and the independent exception identifies that target as 32 with an operand of size 16. This is a supported source-expression-to-reported-constraint relationship without inventing the info key."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies the reshape target as NUM_ACTORS=32 and its conflict with the recorded 16-element info leaf."
+      }
+    },
+    "NB-031": {
+      "source": {
+        "accept": true,
+        "reason": "The traceback singles out inv_sigma @ df.T and reaches matmul's shape rule. Matmul's contraction maps the left final axis and right penultimate axis to the reported incompatible extents 64 and 2. The hint does not overclaim full operand shapes or their runtime provenance."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies inv_sigma @ df.T and the contracted extents 64 and 2 without inventing full runtime shapes."
+      }
+    },
+    "NB-033": {
+      "source": {
+        "accept": false,
+        "reason": "The hint only restates np.array(epoch_start) and notes that epoch_start is the same-named evaluate parameter. It adds no substantive relationship to the recorded BatchTracer, the vmap in_axes mapping, or another independent source origin; its caveats do not supply that missing relationship."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly ties the failing np.array operand to evaluate's epoch_start parameter and makes no conflicting claim about item or its numeric value."
+      }
+    },
+    "PR-003": {
+      "source": {
+        "accept": true,
+        "reason": "The shown call chain connects as_numpy(x) <- _backend_dens(a) <- _rdens(r) <- the radius computed by SphericalPotential._dens as xp.sqrt(R**2+z**2). This crosses distinct source facts and explains the conversion operand's source while explicitly treating the links as syntactic, consistent with the packet's runtime limits."
+      },
+      "key": {
+        "accept": true,
+        "reason": "The stated syntactic chain from R,z through the radius to as_numpy matches the key's traced NumPy boundary."
+      }
+    },
+    "NB-049": {
+      "source": {
+        "accept": true,
+        "reason": "Cell 7 links the right dot operand to reshape(input,(copies*features,)), obtains both factors from input.shape, and maps input axis 1 before entering _predict. This is a useful multi-expression source relationship, and the hint correctly avoids claiming a particular live dimension or weight history."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly links activations to the flattened mapped input and the removed vmap axis, without claiming unsupported live parameter dimensions."
+      }
+    },
+    "REG-004": {
+      "source": {
+        "accept": true,
+        "reason": "The separate import numpy as np establishes that the marked np.asarray(x) expression uses the ordinary NumPy namespace, relating the conversion site to its backend rather than only repeating the operand name. The hint limits this namespace attribution to the shown source."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies x as the np.asarray operand and ordinary NumPy as the saved namespace."
+      }
+    },
+    "WFIVE-005": {
+      "source": {
+        "accept": true,
+        "reason": "The reshape expression puts num_devices and local_batch in its first two positions; the recorded target (4,1,3) therefore supports assigning 4 and 1 to those source terms. The independently reported input size 6 and target size 12 support the mismatch without requiring a reconstruction of padding."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly maps num_devices and local_batch to the requested reshape and reports the recorded 6-versus-12 element mismatch."
+      }
+    },
+    "STREAM-006": {
+      "source": {
+        "accept": true,
+        "reason": "The hint connects the marked npa.sin(A) operation to the separate autograd.numpy import and to grad_sin = jax.grad(sin). These show the source-level relationship between a JAX-transformed helper and its autograd NumPy operation, with appropriate limits on hidden conversion details."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly links A, the autograd.numpy namespace, and grad_sin's jax.grad transform without naming an unsupported inner raw function."
+      }
+    },
+    "NB-001": {
+      "source": {
+        "accept": true,
+        "reason": "The displayed jnp.dot(w,intermediate_layers), dot frame forwarding a,b, and ordered lhs/rhs error support mapping contracted extent 1 to w and 2 to intermediate_layers. It is appropriately confined to the contracted axes."
+      },
+      "key": {
+        "accept": true,
+        "reason": "The dot axis rule and left/right extents 1 and 2 match the key and the recorded inner dot_general forwarding."
+      }
+    },
+    "WFIVE-008": {
+      "source": {
+        "accept": true,
+        "reason": "The helper signature _as_f32(x), caller _as_f32(grad), and np.asarray(x,dtype=np.float32) connect the conversion operand to grad across a function boundary. The separate import identifies ordinary NumPy, while the hint explicitly leaves the unavailable muon_update signature and further runtime identity unresolved."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly connects the failing NumPy conversion's x operand to muon_update's grad argument."
+      }
+    },
+    "NB-024": {
+      "source": {
+        "accept": true,
+        "reason": "The exception independently reports dependence on quatmult's argument x during jit tracing, and the marked quatmult expression passes x to jnp2quaternion. Connecting that reported dependency to its source use is supported; the hint does not claim a concrete value or select an unproven first nested conversion."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies the reported x dependency and its use in jnp2quaternion; it does not misidentify the first conversion."
+      }
+    },
+    "WFOUR-016": {
+      "source": {
+        "accept": true,
+        "reason": "The failing source is shift.reshape(b,d), while the recorded target is (2000,256), so the ordered source dimensions map to b=2000 and d=256. The reported element counts independently establish the mismatch; the hint avoids inventing upstream shapes."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly maps b=2000 and d=256 to the failing shift reshape and its unequal element counts."
+      }
+    },
+    "NB-019": {
+      "source": {
+        "accept": false,
+        "reason": "The hint restates the visible np.cos(theta/2) operand and the same function's theta parameter, without connecting theta to a separate producer, transformation, namespace binding, or independently reported constraint. The traceback line also contains exp and sin, and the hint's conversion caveat does not add a substantive source relationship."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies theta/2 as the np.cos operand and links it to the gate function's theta parameter without asserting the unstaged backend."
+      }
+    },
+    "NB-037": {
+      "source": {
+        "accept": true,
+        "reason": "The recorded entry gradient(params_1) is connected to the separate saved assignment gradient=jit(grad(loss_1)), and the traceback reaches Tensor.np.array(self.modules.pi*self.phase). This usefully connects the transformation entry to the recorded conversion expression while acknowledging that saved wrapper and namespace state are not complete execution history."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly links gradient(params_1) to jit(grad(loss_1)) and identifies the trace's gate-phase array construction."
+      }
+    },
+    "NB-028": {
+      "source": {
+        "accept": true,
+        "reason": "The scan call identifies draw_state and its initial carry, the callback signature identifies prev_state as carry, and trans_mat[:,prev_state] uses that carry as an index. The separate unpacking links trans_mat to params.trans_mat. These source facts align with the error's reported prev_state dependency without asserting a live NumPy container."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly connects the traced index prev_state to scan's carry and trans_mat to params.trans_mat."
+      }
+    },
+    "NB-002": {
+      "source": {
+        "accept": true,
+        "reason": "The signature places nsamples at positional index 3, static_argnums=(0,) excludes it, the body passes it as random.split's count, and the recorded split chain reaches int(num). This is a substantive supported argument/staticness/concretization relationship, appropriately qualified about runtime history."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies nsamples as dynamic argument 3, excluded from static_argnums, and its path into int(num)."
+      }
+    },
+    "NB-061": {
+      "source": {
+        "accept": true,
+        "reason": "The separate import numpy as np resolves the namespace of the marked np.cos(x) call to ordinary NumPy. Relating the failing conversion expression to that saved backend binding adds a supported fact beyond the operand spelling, without asserting complete live namespace history."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies f's x operand and the ordinary NumPy cosine namespace without inventing a JIT transform."
+      }
+    },
+    "NB-021": {
+      "source": {
+        "accept": true,
+        "reason": "The marked jnp.dot(v,self.W), the dot frame's a,b forwarding, and the ordered shape error support relating v's final contracted axis of extent 1 to self.W's penultimate contracted axis of extent 784. The hint does not infer full runtime shapes from initialization."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies the hidden-layer dot and its left extent 1 versus right extent 784, with no unsupported full-shape claim."
+      }
+    },
+    "NB-007": {
+      "source": {
+        "accept": true,
+        "reason": "The traceback identifies self.weight @ x and matmul, then reports incompatible lhs/rhs contracting extents 1 and 2. The hint connects those operands to the appropriate contraction axes and confines its claim to reported extents, avoiding unsupported model-weight history."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly maps the Linear matmul to contraction of weight extent 1 with input extent 2."
+      }
+    },
+    "NB-058": {
+      "source": {
+        "accept": true,
+        "reason": "The marked Linear expression self.weight @ x and matmul shape-rule error support connecting the left final contracted axis and right penultimate contracted axis to extents 200 and 100. No full-shape or initialization assertion is needed for this useful partial relationship."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies the Linear matmul's final-weight-axis versus input penultimate-axis comparison of 200 and 100."
+      }
+    },
+    "NB-060": {
+      "source": {
+        "accept": true,
+        "reason": "The marked a @ b[None] expression identifies the ordered operands, and matmul's contraction rule maps their contracted axes to the recorded extents 15 and 10. The hint correctly treats these as contracted-axis information rather than proof of complete runtime array shapes."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies a @ b[None] and the contraction of extents 15 and 10."
+      }
+    },
+    "NB-051": {
+      "source": {
+        "accept": true,
+        "reason": "The jnp.dot(inputs,params) site, displayed dot_general(a,b) forwarding, and lhs/rhs error support assigning contracting extent 10 to inputs' final axis and 5 to params' penultimate axis. This is a calibrated source-to-constraint relationship."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly maps the loss dot's ordered operands to contracted extents 10 and 5."
+      }
+    },
+    "WFIVE-002": {
+      "source": {
+        "accept": true,
+        "reason": "The lambda passes its u argument into cubic_spline's u parameter, which is the operand of np.asarray at line 248; the module separately imports ordinary NumPy as np. These source-level bindings connect the differentiated input to the conversion site without claiming live values."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly links the failing np.asarray operand to cubic_spline's differentiated u argument and its saved NumPy namespace."
+      }
+    },
+    "NB-052": {
+      "source": {
+        "accept": true,
+        "reason": "The jnp.dot(VA[:,:n_coeff],cAproj) site and displayed a,b forwarding link the ordered shape-rule extents 10 and 6 to the left final and right penultimate contracted axes. The hint correctly avoids reconstructing absent Flax/SVD artifacts or full operand shapes."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies the sliced-basis dot and contracted extents 10 and 6 without inventing the missing model-asset origin."
+      }
+    },
+    "NB-005": {
+      "source": {
+        "accept": true,
+        "reason": "The traceback singles out self.weight @ x in Linear and reports matmul contracting extents 3 and 10001. Relating these ordered operands to their contraction axes is supported and useful without relying on the saved trajectory or model initialization as runtime proof."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies the Linear matmul and contracting extents 3 and 10001."
+      }
+    },
+    "NB-013": {
+      "source": {
+        "accept": true,
+        "reason": "The recorded jax_csqrt_error call is connected to the saved JIT wrapper of np.emath.sqrt, and the traceback reaches NumPy scimath's asarray(x). This links the transformation target to the conversion path while explicitly limiting claims about live bindings."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly links the jitted wrapper to NumPy's complex-sqrt helper and its recorded asarray conversion."
+      }
+    },
+    "NB-014": {
+      "source": {
+        "accept": true,
+        "reason": "The saved assignments connect jax_complex_sqrt_error through jax.jit to np_complex_sqrt and its sp.lambdify(...,np) construction. The recorded generated select expression is correctly quoted, and the hint does not choose an unproven nested conversion call."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly links the NumPy-backed lambdify target to the jitted generated expression and preserves the unknown first nested coercion."
+      }
+    },
+    "NB-026": {
+      "source": {
+        "accept": true,
+        "reason": "The exception reports a cluster_allocs dependency while tracing run_one_gibbs, and that function's marked call forwards cluster_allocs to cluster_update. Linking the independently reported dependency to this source use is supported, with no assertion about values or which nested call first converted it."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies cluster_allocs as the reported traced dependency and its forwarding into cluster_update."
+      }
+    },
+    "NB-018": {
+      "source": {
+        "accept": true,
+        "reason": "The saved decorator and import connect numpy_jax_func's np.sin(x) operation to @jit and ordinary NumPy, and the call/signature associates its operand with x. These are distinct source facts relevant to the recorded tracer conversion; the hint does not assert which nested call first converted it."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly links np.sin's x operand to the jitted function argument and saved ordinary NumPy import."
+      }
+    },
+    "FORUM-002": {
+      "source": {
+        "accept": true,
+        "reason": "The shown power operand depends on f's params,x,y, the separate df=grad(f) assignment connects the recorded call to differentiation, and the import resolves np to NumPy. This supports a useful transformation/operand/backend relationship without inventing internal conversion details."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies np.power's residual base, its syntactic formal dependencies, and grad(f), without singling out a parameter leaf."
+      }
+    },
+    "WFIVE-003": {
+      "source": {
+        "accept": true,
+        "reason": "The bound numpy_eval(self,t_eval) signature and lambda call spline.numpy_eval(x) connect t_eval at np.asarray to the lambda input x; the module separately imports ordinary NumPy. This crosses source statements and is explicitly calibrated as syntactic."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly traces numpy_eval's t_eval operand to the differentiated lambda x at the recorded np.asarray boundary."
+      }
+    },
+    "NB-025": {
+      "source": {
+        "accept": true,
+        "reason": "The saved df=grad(f) assignment connects the recorded df call to the lambda containing tf.reduce_sum(x), and the separate import identifies TensorFlow. The traceback's TensorFlow conversion chain is consistent with this source relationship, while the hint leaves the exact nested conversion unresolved."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly links tf.reduce_sum's x operand, the lambda formal, grad(f), and the saved TensorFlow namespace."
+      }
+    },
+    "NB-042": {
+      "source": {
+        "accept": true,
+        "reason": "The recorded float(x) site is linked to the immediately preceding assignment x=x.mean(), establishing the conversion operand's local producer. This is a supported relationship across source lines and is limited to the recorded failure snapshot."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies float(x) and the immediately preceding x.mean() assignment in the recorded source."
+      }
+    },
+    "PR-002": {
+      "source": {
+        "accept": true,
+        "reason": "The exception reports dependence on loss_fn's params_array during jit tracing, and its marked expression passes *params_array into model.cumulative_adoption. Connecting the recorded dependency to that explicit source use is supported, without asserting which downstream backend object or operation first converted it."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies params_array as the reported loss_fn tracing dependency and its use in cumulative_adoption."
+      }
+    },
+    "NB-010": {
+      "source": {
+        "accept": true,
+        "reason": "The marked jnp.dot(W,x), displayed dot_general(a,b) forwarding, and ordered lhs/rhs error connect W's final contracted extent 100 to x's penultimate contracted extent 16. The hint properly avoids treating requested random-array shapes as complete runtime proof."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies jnp.dot(W,x) and the ordered contracted extents 100 and 16."
+      }
+    },
+    "WFOUR-015": {
+      "source": {
+        "accept": true,
+        "reason": "The reshape target expression orders t, rho_grid.shape[0], and tau_grid.shape[0], so the recorded target (15,50,50) supports that attribution. The preceding mean assignment supplies a distinct source origin for vals, and the reported element counts support the mismatch."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly maps all reshape targets, unequal element counts, and the immediately preceding mean that produces vals."
+      }
+    },
+    "FORUM-007": {
+      "source": {
+        "accept": true,
+        "reason": "The separate import numpy as np resolves the backend namespace of the marked np.asarray(z) expression. This links the recorded conversion site to ordinary NumPy using distinct source facts, while retaining the stated limitations on live bindings and hidden conversion details."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies z as the operand of the failing np.asarray and the saved ordinary NumPy namespace."
+      }
+    },
+    "NB-048": {
+      "source": {
+        "accept": true,
+        "reason": "The shown predictor connects activations to a reshape whose factors come from input.shape, and its vmap maps input axis 1 before the body. This supports the local operand/axis relationship, with the hint explicitly declining to infer live sizes, weights, or iteration history."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly links activations to flattening the input slice after vmap removes axis 1, without assigning unsupported live sizes."
+      }
+    },
+    "NB-012": {
+      "source": {
+        "accept": true,
+        "reason": "The caller applies .item() to the sum of two log_prob results, and the following item frame calls float(self). Under the hint's explicit ordinary-method-binding condition, the receiver of that conversion is the displayed sum. This links two recorded frames without claiming complete runtime provenance."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies the item receiver as the kernel-plus-bias log-probability sum and links it to float(self)."
+      }
+    },
+    "WFOUR-004": {
+      "source": {
+        "accept": true,
+        "reason": "The trace connects the dy_dt_numpy callback's np.exp(y) operation with JAX closure_convert(func,y0,t[0],*args), followed by dynamic callback tracing. This is a supported callback/transformation relationship, and the hint correctly avoids equating closure conversion with computing a derivative."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies the callback's np.exp(y) operand and closure-conversion tracing without asserting an autodiff invocation."
+      }
+    },
+    "NB-039": {
+      "source": {
+        "accept": true,
+        "reason": "The displayed check_array(array,...) signature, its np.asarray(array,...) body, and the preceding check_array(X,...) call connect the conversion operand to the caller's X across a function boundary. The hint limits the binding claim to shown syntax and does not invent an absent runtime object history."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly connects check_array's converting array operand to the caller's X at the saved sklearn boundary."
+      }
+    },
+    "WFOUR-005": {
+      "source": {
+        "accept": true,
+        "reason": "The exception independently identifies dependence on x while tracing jax_func_whoops for jit, and that function's marked source passes x into erf_scipy. This is a supported dependency-to-source-use relationship without claiming a concrete argument or selecting an unseen nested conversion."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies the reported x dependency and its use in erf_scipy(x), without inventing SciPy's hidden conversion implementation."
+      }
+    },
+    "WFIVE-007": {
+      "source": {
+        "accept": true,
+        "reason": "The recorded inp @ iL site and displayed matmul dimension_numbers support relating contracted extents 3 and 2 to the ordered operands. The preceding application-frame assignment independently supplies iL's source expression jnp.diag(1/self.lengthscales), without requiring the absent module body or full runtime shapes."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies inp @ iL, contraction sizes 3 and 2, and the displayed lengthscale-diagonal origin of iL while preserving missing shapes."
+      }
+    },
+    "NB-011": {
+      "source": {
+        "accept": true,
+        "reason": "The scipy_sqp signature and shown call scipy_sqp(X_k,A,P,L,E_0,I) support mapping X to X_k and A,L to the corresponding caller variables. This is a useful cross-function operand relationship, and the hint correctly declines to assign the unlocalized error dimensions to either of the two matrix products."
+      },
+      "key": {
+        "accept": true,
+        "reason": "The shown scipy_sqp call/signature bindings match, including X_k to X; the hint makes no conflicting dimension-to-operand attribution."
+      }
+    },
+    "WFOUR-009": {
+      "source": {
+        "accept": true,
+        "reason": "The exception reports dependence on ffmulti's i argument while tracing it for pmap, and the marked source uses i in args[i,:]. This links the reported transformed dependency to its role as index data without asserting the live container type or concrete index value."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies i as the pmap tracing dependency and its use as the args[i,:] index."
+      }
+    },
+    "NB-003": {
+      "source": {
+        "accept": true,
+        "reason": "The marked jnp.dot(x,y), its dot frame forwarding a,b, and the ordered shape-rule error connect x's final contracted extent 3 to y's penultimate contracted extent 2. The statement is correctly limited to contracted axes."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies the custom_dot contraction rule and ordered extents 3 and 2."
+      }
+    },
+    "NB-034": {
+      "source": {
+        "accept": true,
+        "reason": "The caller's np.diag(mat), the displayed diag(v,k) signature, and its asanyarray(v) expression connect mat across the function boundary to the conversion operand v. The hint accurately limits this to the displayed binding relationship."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly connects np.diag(mat)'s argument to diag's v and the recorded asanyarray(v) conversion."
+      }
+    },
+    "NB-046": {
+      "source": {
+        "accept": true,
+        "reason": "The only imported body evidence, A.reshape([chiL,dL,chi_keep]), orders the target variables, and the recorded target [1,2,20] supports the stated mapping. The independently reported size 4 versus 40 supports the mismatch without inventing A or chi_keep's unseen computation."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly maps chiL, dL, and chi_keep to the failing reshape target and reports 4 elements versus 40."
+      }
+    },
+    "NB-047": {
+      "source": {
+        "accept": true,
+        "reason": "The marked dot's ordered operands encoder_inputs and params['embed_weights'], displayed a,b forwarding, and lhs/rhs shape error support assigning contracted extents 32 and 256 to their respective contraction axes. The hint avoids unsupported full shapes or local-text history."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies the encoder embedding dot and its ordered contraction sizes 32 and 256."
+      }
+    },
+    "NB-059": {
+      "source": {
+        "accept": true,
+        "reason": "The exception reports dependence on _render_jax_core's a argument during jit tracing, and the marked frame uses a in the 2*a operand of int. This is a supported reported-dependency/source-use relationship, with no concrete geometry value asserted."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies the reported a dependency and its use in 2*a without blaming linspace or claiming a numeric radius."
+      }
+    },
+    "NB-045": {
+      "source": {
+        "accept": false,
+        "reason": "The hint only restates np.cos(theta) and the same-named theta parameter from the frame signature. It does not connect that operand to the shown vmap mapping, its reported BatchTracer constraint, an independent producer, or a namespace binding, so it lacks a substantive relationship beyond one expression."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies theta, rather than phi or nside, as the np.cos operand in hp_ang2pix."
+      }
+    },
+    "NB-029": {
+      "source": {
+        "accept": false,
+        "reason": "The hint paraphrases jax.numpy.array(np.arange(1,len(y))) and notes its visible dependence on ar1's y parameter. It supplies no substantive connection to the recorded failure at y[t]-alpha*y[t-1] or to t's scan dependency; repeating this upstream construction and formal name is insufficient."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies the displayed scan-index array construction and its dependence on ar1's y length; it does not claim that construction raises."
+      }
+    },
+    "NB-022": {
+      "source": {
+        "accept": true,
+        "reason": "The caller my_func(jnp.ones((2,))) and my_func(x) signature connect the np.exp(x) operand to the caller's JAX array construction. This is a supported cross-statement source-origin relationship, explicitly qualified as syntactic rather than a complete runtime identity claim."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly connects np.exp's x operand to my_func's formal and the shown jnp.ones((2,)) call argument."
+      }
+    },
+    "NB-015": {
+      "source": {
+        "accept": true,
+        "reason": "The shown I_K and hodgekin_huxley_current calls link s to the HodgekinHuxleyState construction in explicit_terms, whose n keyword comes from state.c.n. This connects the np.power(s.n,4) operand to a selected source field across functions. Both conflicting np imports are reported without asserting their execution order or a live backend identity."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly traces I_K's s.n through the displayed state constructor to state.c.n, and preserves uncertainty about saved namespace execution order."
+      }
+    },
+    "NB-020": {
+      "source": {
+        "accept": true,
+        "reason": "The marked jnp.dot(w,activations), displayed dot_general(a,b) forwarding, and lhs/rhs shape error connect w's final contracted extent 14 with activations' penultimate contracted extent 712. The hint appropriately avoids deriving full shapes or dataset values."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies the predictor dot's contraction axes and ordered extents 14 and 712."
+      }
+    },
+    "WFIVE-006": {
+      "source": {
+        "accept": true,
+        "reason": "The exception independently reports dependence on f's argument x during jit tracing, and the marked int(jnp.sum(x)) expression uses x in jnp.sum. This is a supported dependency-to-source-use relationship and does not infer the argument's concrete runtime value."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies the reported x dependency and its sum expression, without claiming that sum or range is the raising operation."
+      }
+    }
+  },
+  "v2": {
+    "NB-033": {
+      "source": {
+        "accept": true,
+        "reason": "Aligning the five vmap axes with evaluate's signature assigns axis 0 to epoch_start, which the marked line then passes to np.array; the hint correctly leaves its concrete value and full shape unknown."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly aligns epoch_start with mapped axis 0 and its np.array use; does not invent its value or blame item."
+      }
+    },
+    "WFOUR-013": {
+      "source": {
+        "accept": true,
+        "reason": "It links the failing np.cos call to its composite operand 2 * jnp.arccos(x) and to the grad wrapper that invokes cheb_2, without inventing runtime values."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies the np.cos argument as 2 * jnp.arccos(x) and connects cheb_2 to grad without a numerical-domain claim."
+      }
+    },
+    "NB-029": {
+      "source": {
+        "accept": true,
+        "reason": "It connects the diagnostic's traced scan input t to both index expressions on the failing line and correctly avoids claiming that every operand or the creation site requested conversion."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly connects scan-traced t to the y index expressions without claiming the observations are the converted tracer."
+      }
+    },
+    "WFOUR-002": {
+      "source": {
+        "accept": true,
+        "reason": "It connects the reported add creation site to the source line containing np.multiply and derives the useful limit that whole-line attribution does not identify the tracer-producing subexpression."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly matches the reported add provenance to the multiply line while preserving uncertainty about the converted argument."
+      }
+    },
+    "NB-017": {
+      "source": {
+        "accept": true,
+        "reason": "The reconstructed lists support A's (2, 2) and B's (1, 2) shapes; relating these bindings to the two products and reported 2-versus-3 contraction is a supported partial constraint, with live-shape uncertainty preserved."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly gives the saved A and B shapes and the 2-versus-3 contraction; does not falsely select the later B product."
+      }
+    },
+    "SO-64950165": {
+      "source": {
+        "accept": true,
+        "reason": "It identifies S / K as the operand of the marked np.log call and connects that function to the explicit grad wrapper, while making no unsupported runtime-value claim."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly localizes np.log and its S / K operand and identifies the targeting grad wrapper."
+      }
+    },
+    "WFOUR-008": {
+      "source": {
+        "accept": true,
+        "reason": "It links the reported tracer creation at make_prior line 84 to the conversion-reaching assignment at line 85, preserving the distinction between creation and conversion and avoiding operand overclaims."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Accurately preserves the reported line-84 creation site and the line-85 rho assignment conversion without equating them."
+      }
+    },
+    "NB-019": {
+      "source": {
+        "accept": true,
+        "reason": "It connects the grad invocation to the library expression reached along the recorded compiler call path, and correctly limits what that path establishes about the exact traced operand or nested conversion."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly connects grad(compute_loss) to the gate-expression conversion path without inventing backend behavior or parameter values."
+      }
+    },
+    "REG-002": {
+      "source": {
+        "accept": true,
+        "reason": "It connects the selected int conversion to the edge_index.max() result and the earlier jitted num_nodes access, identifying an immediate scalar-extraction boundary without inventing values."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly selects int and its edge_index.max() operand on the recorded JIT path, before zeros construction."
+      }
+    },
+    "WFOUR-012": {
+      "source": {
+        "accept": true,
+        "reason": "It links the named jit tracing context to the explicit fit wrapper and relates val.item() scalar extraction to the float-conversion error, while correctly avoiding unique-site certainty absent a selecting frame."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly connects the fit JIT wrapper to val.item() and the float diagnostic while acknowledging the missing extraction frame."
+      }
+    },
+    "WFIVE-004": {
+      "source": {
+        "accept": true,
+        "reason": "It identifies the inner np.where and its three distinct operands, connects it to the earlier grad frame, and preserves the evidence limit that the caret does not identify which argument was converted."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies the inner np.where and all displayed inputs without choosing an unsupported converted argument or branch."
+      }
+    },
+    "WFOUR-014": {
+      "source": {
+        "accept": true,
+        "reason": "It applies the matmul axis constraint to the selected x,w product and the reported 16-versus-15 contracting extents; its limits are explicitly about what the extent pair alone establishes."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly states matmul contracting axes and extents 16 versus 15 without inventing full shapes from the error pair."
+      }
+    },
+    "WFOUR-006": {
+      "source": {
+        "accept": true,
+        "reason": "It connects the reported Mc_eta_to_ms tracer origin with the explicit float(mass_1_source) conversion in a different function and does not invent the unavailable intervening implementation."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly links the reported Mc_eta_to_ms creation site to float(mass_1_source) without inventing the missing computation."
+      }
+    },
+    "NB-038": {
+      "source": {
+        "accept": true,
+        "reason": "It interprets the explicit (1, 0) tensordot axes and connects those operand axes to the reported 1-versus-8 contraction, while limiting claims about full shapes and history."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly maps tensordot axes 1 and 0 to the operands and the reported extents 1 versus 8."
+      }
+    },
+    "FORUM-001": {
+      "source": {
+        "accept": true,
+        "reason": "It relates the Dense layer's displayed dot call to the correct operand-axis equality and the 512-versus-50 contraction failure, without claiming an unsupported weight origin or full shape."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly maps dot contraction to the final x axis and penultimate w axis and preserves the unexplained weight history."
+      }
+    },
+    "FORUM-003": {
+      "source": {
+        "accept": true,
+        "reason": "It uses the saved grad_F binding and recorded grad_F-to-F-to-quad path to connect differentiation with the float-conversion failure, without inventing the missing library conversion site."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly links grad_F to the quad integrand path without inventing a callback abscissa or internal instruction."
+      }
+    },
+    "NB-053": {
+      "source": {
+        "accept": true,
+        "reason": "It matches the reported reduce_max source location to int(jnp.max(n)) and explicitly derives the immediate producer-to-converter relationship from the nested expression."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly matches reduce_max provenance to jnp.max(n) feeding int in the recorded multinomial helper."
+      }
+    },
+    "WFOUR-001": {
+      "source": {
+        "accept": true,
+        "reason": "It connects the diagnostic's eval_shape tracing context and named dependency with the conversion-reaching np.equal use site, while avoiding an unsupported identification of x with every operand."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly connects eval_shape and the reported x dependency to np.equal(inputs, 0), without inventing the argument binding."
+      }
+    },
+    "NB-041": {
+      "source": {
+        "accept": true,
+        "reason": "It connects each candidate product's local names to distinct acts/deltas indexed sources and the observed 1-versus-64 failure, without claiming the traceback selected one product or a live shape."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly gives the activation/delta source bindings and 1-versus-64 contraction without blaming the separate reference Gram expression."
+      }
+    },
+    "WFOUR-010": {
+      "source": {
+        "accept": true,
+        "reason": "It joins the caret on jnp.shape(grad) to the downstream asarray(a) frame, locating the caller argument on the conversion path rather than confusing it with jnp.shape(val)."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly connects highlighted jnp.shape(grad) to the following asarray(a) fallback and the traced get_update context."
+      }
+    },
+    "STREAM-005": {
+      "source": {
+        "accept": true,
+        "reason": "It applies the matmul axis contract to self.weight @ x and the reported 20-versus-10 extents, a supported constraint that does not overstate the available full shapes."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies self.weight @ x contracting axes and extents 20 versus 10 without inventing a full weight shape."
+      }
+    },
+    "PR-001": {
+      "source": {
+        "accept": true,
+        "reason": "It identifies the jnp.log(0.15) result as the immediate argument to the caret-selected float conversion and links that source boundary to the reported concretization, without guessing other values."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly localizes float(jnp.log(0.15)) and its log-result operand rather than another historical conversion."
+      }
+    },
+    "NB-008": {
+      "source": {
+        "accept": true,
+        "reason": "It connects g and lambdas in the marked matmul to the correct contracting-axis equality and reported 8-versus-0 extents, while leaving full shapes and per-system history unresolved."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly maps matmul axes and extents 8 versus 0 without claiming my_lambdas itself is empty or naming a failing system."
+      }
+    },
+    "NB-054": {
+      "source": {
+        "accept": true,
+        "reason": "It combines the reduce_max source attribution with the supplemental int(jnp.max(n)) line to expose the direct result-to-int conversion relationship, without inventing total-count values."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly relates the saved reduce_max provenance to jnp.max(n) supplied to int in multinomial sampling."
+      }
+    },
+    "SO-70409729": {
+      "source": {
+        "accept": true,
+        "reason": "It links the formatting field to valuesEndo[i], correctly distinguishes formatting before exec receives its string, and connects this float-conversion boundary to jacfwd(objectFunction)."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies percent formatting of valuesEndo[i] before exec and connects it to jacfwd(objectFunction)."
+      }
+    },
+    "NB-045": {
+      "source": {
+        "accept": true,
+        "reason": "Aligning in_axes=(None, 0, 0) with the recorded hp_ang2pix(nside, theta, phi) signature maps theta to axis 0 and connects that parameter to the failing np.cos(theta)."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly aligns theta with mapped axis 0 and np.cos(theta), without attributing the conversion to phi or nside."
+      }
+    },
+    "WFIVE-001": {
+      "source": {
+        "accept": true,
+        "reason": "It joins the source receiver action with the error's (12,) operand and size-1 target, establishing the element-count incompatibility without attributing an unsupported earlier cause."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies action.reshape(1) and the 12-versus-1 size violation without inferring env.sys.nu or NaN causes."
+      }
+    },
+    "NB-036": {
+      "source": {
+        "accept": true,
+        "reason": "It maps the recorded target sizes back to n_samples and n_perturbs and derives the fixed-axis divisibility requirement for -1, while preserving uncertainty about upstream assignments."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly aligns target axes with 845000 and 7 and states the required 5915000 divisibility for 5184333 elements."
+      }
+    },
+    "NB-040": {
+      "source": {
+        "accept": true,
+        "reason": "It applies the dot contracting-axis constraint to the exact composite left operand and vec_measurement_op, tying those axes to the 4-versus-16 failure without assuming vector ranks or history."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies the probability dot operands, general contracting axes, and extents 4 versus 16 without inventing vector ranks."
+      }
+    },
+    "FORUM-012": {
+      "source": {
+        "accept": true,
+        "reason": "It connects the outer pmap call with the library predict expression along the recorded rollout path and correctly limits what the transform's presence alone establishes about conversion operands."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly connects pmap to the predict conversion line without treating the ignored mapped argument as actions or claiming a reshape error."
+      }
+    },
+    "FORUM-011": {
+      "source": {
+        "accept": false,
+        "reason": "The hint only restates that func1 is jitted and theta is the reported dependency, plus the equivalent jit wrapper. It does not link theta or params to the ConstantCp conversion path or derive a useful diagnostic constraint."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly matches the func1 JIT wrapper and reported theta dependency while preserving uncertainty about the exact converted coefficient."
+      }
+    },
+    "NB-023": {
+      "source": {
+        "accept": true,
+        "reason": "It connects the diagnostic's slice creation attribution to the Octonion constructor receiving indexed x components, providing a bounded origin clue while separating creation from the later conversion."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies component-slice provenance in jnp2octonion while distinguishing it from the later conversion and avoiding formal-x attribution."
+      }
+    },
+    "STREAM-012": {
+      "source": {
+        "accept": true,
+        "reason": "It links the diagnostic's exact cg.nodes.species dependency to both scale/shift indexing uses in the marked source expression and preserves uncertainty about the other operands."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly connects the JIT cg.nodes.species dependency to both displayed index uses without selecting an unsupported scale or shift subexpression."
+      }
+    },
+    "FORUM-010": {
+      "source": {
+        "accept": true,
+        "reason": "It combines the source grad binding with the recorded error_diff-to-cdist-to-np.asarray path, locating the host-array conversion on the differentiated path without inventing library details."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly connects grad(error_func) to the recorded np.asarray(XA) conversion in cdist."
+      }
+    },
+    "WFOUR-011": {
+      "source": {
+        "accept": true,
+        "reason": "It connects the get_Pe_healpix tracer creation location to the later explicit np.array(mock_map_test.y_sim) use, correctly distinguishing origin from the conversion request."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly links the reported get_Pe_healpix creation site to np.array(y_sim), without attributing conversion to mollview or inventing tracer escape details."
+      }
+    },
+    "NB-004": {
+      "source": {
+        "accept": true,
+        "reason": "It maps the empty recorded reshape operand to the params slice and the (1, 3) target to x.shape, establishing the 0-versus-3 element mismatch without claiming an upstream cause."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly identifies the sliced-params reshape receiver and its empty size versus target (1, 3), without claiming an unrecorded iteration."
+      }
+    },
+    "WFOUR-003": {
+      "source": {
+        "accept": true,
+        "reason": "It joins the reported creation line, the direct jnp.ones-to-np.tril argument relationship, and the later asanyarray array conversion, preserving the distinction between tracer production and conversion."
+      },
+      "key": {
+        "accept": true,
+        "reason": "Correctly links line-21 provenance and jnp.ones input to np.tril and its later asanyarray conversion without blaming ones creation."
+      }
+    }
+  },
+  "expanded": {
+    "FORUM-012": {
+      "accept": true,
+      "reason": "The outer pending _sample_action assignment cannot supply the inner actions operand; trace quotes and scope are accurate."
+    },
+    "NB-004": {
+      "accept": true,
+      "reason": "Reshape receiver, target extents, empty-slice caveat and set_model_params argument match agree with the packet."
+    },
+    "WFIVE-004": {
+      "accept": true,
+      "reason": "The three np.where argument alternatives and X_NODES-to-SLOPES name use are accurately quoted and limited."
+    },
+    "NB-026": {
+      "accept": true,
+      "reason": "Adjacent cluster_update bindings and comparison-result condition are supported; source context is labelled and scoped."
+    },
+    "WFOUR-001": {
+      "accept": true,
+      "reason": "Trace and minimal source are accurately retrieved, with the eval_shape dependency kept separate from operand identity."
+    },
+    "STREAM-005": {
+      "accept": true,
+      "reason": "Contraction axes and 20/10 extents are stated with an order-preserving-lowering condition; source quotes are accurate."
+    },
+    "NB-021": {
+      "accept": true,
+      "reason": "The dot frame preserves operand order, supporting extents 1 and 784; adjacent method bindings are correct."
+    },
+    "NB-053": {
+      "accept": true,
+      "reason": "The multinomial call binds n to self.total_count, and the reduce_max/int relationship is accurately scoped."
+    },
+    "FORUM-002": {
+      "accept": true,
+      "reason": "The inner power evaluation, default grad parameter 0, and source producer name link are supported."
+    },
+    "NB-019": {
+      "accept": true,
+      "reason": "Default grad targets params; list item evaluation order and the compile circuit binding match the saved expressions."
+    },
+    "REG-004": {
+      "accept": true,
+      "reason": "The sole np.asarray operand and caret span are accurately described."
+    },
+    "WFIVE-007": {
+      "accept": true,
+      "reason": "The adjacent predict_given_factorizations bindings and left/right 3/2 contraction extents follow the displayed matmul lowering."
+    },
+    "WFIVE-006": {
+      "accept": true,
+      "reason": "The call binds x to jnp.ones(4), and the caret-selected int receives jnp.sum(x), as stated."
+    },
+    "NB-051": {
+      "accept": true,
+      "reason": "The loss_fn parameter bindings and dot contraction extents 10/5 match the saved trace."
+    },
+    "NB-054": {
+      "accept": true,
+      "reason": "Supplemental multinomial lines and adjacent JAX parameter matches are accurately retrieved without asserting missing total-count values."
+    },
+    "SO-70409729": {
+      "accept": true,
+      "reason": "Percent-formatting and inner call evaluation precede their enclosing calls; jacfwd targets the first parameter valuesEndo."
+    },
+    "NB-045": {
+      "accept": true,
+      "reason": "The displayed vmap axes align with theta in the saved hp_ang2pix signature, with appropriate runtime limits."
+    },
+    "NB-039": {
+      "accept": true,
+      "reason": "Classifier/scaler argument bindings, np.asarray operand and reconstructed-context attribution agree with the packet."
+    },
+    "WFOUR-013": {
+      "accept": true,
+      "reason": "The cosine input and grad parameter x are correctly identified from the selected call and definition."
+    },
+    "SO-64950165": {
+      "accept": true,
+      "reason": "The caret selects np.log(S/K), and the two np imports are accurately ordered with an execution-order qualification."
+    },
+    "REG-002": {
+      "accept": true,
+      "reason": "The int operand is precisely self.edge_index.max(); retrieved property and data context are accurately labelled."
+    },
+    "NB-028": {
+      "accept": true,
+      "reason": "The pi producer name use and scan carry/index relationship match the saved source without asserting live container provenance."
+    },
+    "WFIVE-005": {
+      "accept": true,
+      "reason": "The _shard binding and reshape receiver/target shapes and element counts are correctly assigned."
+    },
+    "WFOUR-011": {
+      "accept": true,
+      "reason": "Creation location and later np.array use are quoted accurately and kept distinct."
+    },
+    "NB-011": {
+      "accept": true,
+      "reason": "The scipy_sqp adjacent bindings are correct; the two products are kept ambiguous rather than assigning unsupported extents."
+    },
+    "STREAM-012": {
+      "accept": true,
+      "reason": "Scale/shift receiver and species index roles are accurate; no storage-class or checkpoint claim is introduced."
+    },
+    "NB-038": {
+      "accept": true,
+      "reason": "The adjacent helper bindings and tensordot axis 1/axis 0 extents 1/8 match the displayed trace."
+    },
+    "NB-048": {
+      "accept": true,
+      "reason": "Retrieved pseudocode context and the local flatten/vmap relationship match the packet without asserting runtime initialization."
+    },
+    "WFOUR-016": {
+      "accept": true,
+      "reason": "Reshape operand/target counts and b,d source-axis mapping agree with the recorded error and displayed unpacking."
+    },
+    "NB-058": {
+      "accept": true,
+      "reason": "Contraction extents 200/100 and the consistency of source input axis 0 with 100 are supported."
+    },
+    "NB-049": {
+      "accept": true,
+      "reason": "Pseudocode lines and flatten/vmap relation are accurate and explicitly limited to local source context."
+    },
+    "NB-042": {
+      "accept": true,
+      "reason": "The float receiver x and immediately preceding mean producer match the executed source and caret."
+    },
+    "NB-056": {
+      "accept": true,
+      "reason": "Dot operand order and extents 3/2 match the trace; saved 2x3 shapes are described as consistency evidence."
+    },
+    "NB-046": {
+      "accept": true,
+      "reason": "run_dmrg/update_bond/split_and_truncate bindings and reshape target values match the trace; missing internal provenance stays explicit."
+    },
+    "NB-052": {
+      "accept": true,
+      "reason": "Bound method parameter matches and dot extents 10/6 are accurate without claiming absent SVD/Flax artifact provenance."
+    },
+    "NB-012": {
+      "accept": true,
+      "reason": "Adjacent kernel and eval_logprior bindings are correct, and item receiver-to-float association is properly qualified."
+    },
+    "NB-003": {
+      "accept": true,
+      "reason": "The custom_dot bindings and 3/2 contraction axes agree with the trace and saved 2x3 source rows."
+    },
+    "WFOUR-003": {
+      "accept": true,
+      "reason": "The tril/asanyarray call path and report-cited creation line are accurately associated without overclaiming the producing subexpression."
+    },
+    "NB-036": {
+      "accept": true,
+      "reason": "Reshape receiver shape, fixed target axes and divisibility requirement match the saved error."
+    },
+    "NB-059": {
+      "accept": true,
+      "reason": "render_jax and _render_jax_core adjacent argument matches are correct and the dependency on a is accurately scoped."
+    },
+    "FORUM-010": {
+      "accept": true,
+      "reason": "Default grad targets x and print is pending while error_diff evaluates, as recorded."
+    },
+    "NB-024": {
+      "accept": true,
+      "reason": "quatmult and number-sequence bindings match adjacent signatures; dependency and retrieved context claims are limited appropriately."
+    },
+    "NB-023": {
+      "accept": true,
+      "reason": "octmult parameter matches are correct while its body globals remain explicit; creation and conversion sites are kept distinct."
+    },
+    "NB-031": {
+      "accept": true,
+      "reason": "learn bindings and producer name links match source; contraction extents 64/2 are conditionally attributed in order."
+    },
+    "WFIVE-008": {
+      "accept": true,
+      "reason": "The _as_f32 binding, MUON_3X2 producer name link and np.asarray positional operand match the packet."
+    },
+    "NB-022": {
+      "accept": true,
+      "reason": "The my_func call supplies jnp.ones((2,)) to x as stated; retrieved JIT context and operand use are accurate."
+    },
+    "NB-010": {
+      "accept": true,
+      "reason": "The dot frame preserves operand order, supporting left W extent 100 and right x extent 16."
+    },
+    "WFOUR-002": {
+      "accept": true,
+      "reason": "The two multiply argument alternatives are correct and the same-line add report is not overassigned to one argument."
+    },
+    "WFIVE-001": {
+      "accept": true,
+      "reason": "The action reshape receiver has recorded 12 elements and target 1; source retrieval avoids unsupported training provenance."
+    },
+    "WFIVE-003": {
+      "accept": true,
+      "reason": "The numpy_eval bound method maps x to t_eval, and the caret-selected np.asarray operand is correctly quoted."
+    },
+    "NB-040": {
+      "accept": true,
+      "reason": "compute_p receives evolve_particle output and E_0 in the stated positions; the dot constraint is accurately scoped."
+    },
+    "FORUM-001": {
+      "accept": true,
+      "reason": "The source Serial order and integer indexing axis removal are correct; trace contraction extents are kept limited."
+    },
+    "NB-015": {
+      "accept": true,
+      "reason": "Adjacent scan/current/I_K bindings, selected field n, and np import order are supported and appropriately qualified."
+    },
+    "PR-001": {
+      "accept": true,
+      "reason": "The _run argument binding and float(jnp.log(0.15)) caret association match the source and trace."
+    },
+    "PR-003": {
+      "accept": true,
+      "reason": "The _rdens/backend/as_numpy bindings and inner-call evaluation order are correct; earlier radius source is scoped syntactically."
+    },
+    "WFOUR-005": {
+      "accept": true,
+      "reason": "The adjacent jax_func_whoops binding x<-xarr and the scoped erf_scipy dependency match the saved packet."
+    },
+    "NB-018": {
+      "accept": true,
+      "reason": "The numpy_jax_func binding and retrieved source statements agree with the traceback; no new unsupported producer claim appears."
+    },
+    "NB-033": {
+      "accept": true,
+      "reason": "The bound evaluate signature aligns epoch_start with vmap axis 0; auto_run state binding is correct."
+    },
+    "NB-043": {
+      "accept": true,
+      "reason": "The affine call bindings, source key-name uses and .T axis reversal agree with the saved source and reported 10/2 mismatch."
+    },
+    "WFOUR-009": {
+      "accept": true,
+      "reason": "parallel_map bindings, make_arg_combo return expression and producer name uses are correct; index receiver/dependency roles are accurate."
+    },
+    "WFOUR-006": {
+      "accept": true,
+      "reason": "The float operand and caret are correct; reported ripple creation and later ninjax use remain distinct."
+    },
+    "NB-014": {
+      "accept": true,
+      "reason": "The lambdify/JIT producer name links and selected generated expression match source without claiming a particular failing nested call."
+    },
+    "WFOUR-012": {
+      "accept": true,
+      "reason": "The fit JIT wrapper and extraction site are accurately retrieved without asserting an unrecorded unique raising line."
+    },
+    "WFIVE-002": {
+      "accept": true,
+      "reason": "The cubic_spline bindings and caret selections are accurate; construction must evaluate before the following call."
+    },
+    "NB-029": {
+      "accept": true,
+      "reason": "The two y indexing roles and t dependency agree with source and traceback, without assigning unrecorded concrete values."
+    },
+    "FORUM-003": {
+      "accept": true,
+      "reason": "Default grad targets c1, as the displayed F signature and grad construction establish."
+    },
+    "NB-020": {
+      "accept": true,
+      "reason": "predict bindings and dot extents 14/712 are supported; differing source/trace line numbers remain explicit."
+    },
+    "WFOUR-008": {
+      "accept": true,
+      "reason": "Adjacent eval_single_target and make_prior bindings are correct; reported creation location is kept separate from the assignment use."
+    },
+    "NB-013": {
+      "accept": true,
+      "reason": "The _fix_real_lt_zero x binding is correct, and the outer pending assignment cannot supply the inner conversion operand."
+    },
+    "FORUM-007": {
+      "accept": true,
+      "reason": "The source NUTS-to-MCMC-to-run call chain and model-frame name agree with the minimal packet."
+    },
+    "NB-008": {
+      "accept": true,
+      "reason": "loss_function and expanded gamma_function bindings match the adjacent trace; g/lambdas extents are attributed conditionally in order."
+    },
+    "PR-002": {
+      "accept": true,
+      "reason": "The adjacent JaxFitter fit binding, B.exp operand and imported-alias/reassigned-global distinction follow the displayed source."
+    },
+    "STREAM-006": {
+      "accept": true,
+      "reason": "Caret-selected calls, default grad target A, and print pending evaluation are supported by the recorded trace and source."
+    },
+    "WFOUR-010": {
+      "accept": true,
+      "reason": "Caret selections correctly connect jnp.shape(grad) to inner asarray(a); print argument evaluation order is accurate."
+    },
+    "NB-001": {
+      "accept": true,
+      "reason": "mymodel parameter matching and dot operand extents 1/2 follow the adjacent saved frames."
+    },
+    "NB-061": {
+      "accept": true,
+      "reason": "The trace remains inside df_dx evaluation, so the enclosing print has not received its result."
+    },
+    "NB-041": {
+      "accept": true,
+      "reason": "The compute_batch_jacobian_gram bindings are correct; source context distinguishes candidate products without selecting one unsupportedly."
+    },
+    "WFOUR-015": {
+      "accept": true,
+      "reason": "slice_esjd argument matches and vals reshape receiver/target shapes and counts are accurate."
+    },
+    "NB-017": {
+      "accept": true,
+      "reason": "All doubleintegratormodel bindings are correct; candidate products and source matrix shapes remain distinct from runtime attribution."
+    },
+    "NB-005": {
+      "accept": true,
+      "reason": "train/train_step bindings, conditional 3/10001 contraction mapping and column-stack orientation fact are supported."
+    },
+    "NB-025": {
+      "accept": false,
+      "reason": "Packet lines 18-22 are TensorFlow internal continuation expressions with no supplied frame names, but the card incorrectly attributes all five to <lambda>; the packet labels only tf.reduce_sum at line 9 as the lambda frame."
+    },
+    "NB-007": {
+      "accept": true,
+      "reason": "step/cache bindings and conditional left/right extents 1/2 match the trace; pinned supplemental source and runtime-line discrepancy stay explicit."
+    },
+    "NB-055": {
+      "accept": true,
+      "reason": "The single reshape target NUM_ACTORS=32 and receiver size 16 match the trace, with info-key uncertainty preserved."
+    },
+    "NB-060": {
+      "accept": true,
+      "reason": "The inserted b singleton is axis 0; source shapes and observed contracting axes 15/10 are consistently described."
+    },
+    "NB-034": {
+      "accept": false,
+      "reason": "Packet line 21 is a new notebook frame calling setup_preconditioner, but the card incorrectly labels it logposterior.<locals>.<lambda>; the packet source instead locates that call in the loss_mpcg body, and supplies no lambda attribution for this notebook frame."
+    },
+    "NB-047": {
+      "accept": true,
+      "reason": "Both adjacent train_step/transformer_model bindings and ordered dot extents 32/256 match the packet."
+    },
+    "NB-037": {
+      "accept": true,
+      "reason": "The source grad(loss_1) default parameter tensors and all selected trace/source locations are accurate."
+    },
+    "NB-002": {
+      "accept": true,
+      "reason": "The split count nsamples, zero-based parameter index 3 and exclusion from static_argnums=(0,) agree with source and recorded int(num)."
+    },
+    "WFOUR-004": {
+      "accept": true,
+      "reason": "The adjacent JAX trace parameter matches and np.exp callback operand are correct; closure tracing is not called differentiation."
+    },
+    "WFOUR-014": {
+      "accept": true,
+      "reason": "The retrieved matmul expressions and 16/15 contracting constraint agree with the source and annotated saved trace."
+    }
+  }
+}

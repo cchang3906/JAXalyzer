@@ -1,0 +1,2720 @@
+[
+  {
+    "case": "NB-001",
+    "group": "owner:aitechroberts",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "jnp.dot(w,intermediate_layers) in mymodel",
+      "operand_or_axis": "Weight axis 1 length 1 versus input matrix axis 0 length 2.",
+      "explanation": "The second call passes x=[[1.0],[2.0]], shape (2,1), directly to a network initialized for input width 1. Matrix dot contracts 1 with 2 before relu or bias addition.",
+      "anchors": [
+        "cell 19 L6-9: intermediate_layers=input; jnp.dot(w,intermediate_layers)",
+        "cell 19 L16-30: weights (n,m), layer_sizes=[1,64,64,1]",
+        "cell 21 L4-5; saved mymodel line 26, shapes (1,) and (2,)",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/aitechroberts/sys_tool/blob/de6c830945a1b2511c0ff2239c537bde59d4d0f0/Lecture_18_Jax_code.ipynb",
+          "git_blob": "f6a54621bf242ee191c6091befb48dca62ebf993",
+          "notebook_sha256": "791ae4849f7d9386e8b82a74fd70eedca767fdbde11f9e4307f576655d2fa2a7",
+          "target_cell_zero_based": 21,
+          "target_source_sha256": "35e5782f79e8c34543ca6bcf515db8de39a1509892ee63e01915984686a31220",
+          "saved_trace_sha256": [
+            "096091fa1b252702a3a643edabe5673bf6866367327c785a7c433af20c811b2c"
+          ]
+        }
+      ],
+      "limits": [
+        "No execution or present-library compatibility claim."
+      ]
+    }
+  },
+  {
+    "case": "NB-002",
+    "group": "owner:al-jshen",
+    "family": "scalar",
+    "eligible": true,
+    "key": {
+      "operation": "int(num) inside threefry_split, reached from random.split(rng, nsamples) in jitted batch_elbo",
+      "operand": "nsamples, the fourth batch_elbo argument, traced as an int32 scalar",
+      "why": "The recorded batch_elbo marks only argument 0 static. Its dynamic sample count reaches the PRNG split implementation, which requires int(num) while tracing. Python int cannot consume this abstract tracer even though the calling cell supplies the literal 100.",
+      "source_anchors": [
+        {
+          "cell": 14,
+          "lines": [
+            2
+          ],
+          "quote": "batch_elbo(lnp, rng, (means, logstds), 100)"
+        },
+        {
+          "cell": 8,
+          "lines": [
+            26,
+            27,
+            29
+          ],
+          "quote": "@partial(jax.jit, static_argnums=(0,)); def batch_elbo(ln_prob, rng, vi_params, nsamples: int) -> float:; rngs = random.split(rng, nsamples)"
+        }
+      ],
+      "trace_anchors": [
+        {
+          "lines": [
+            8,
+            9,
+            11
+          ],
+          "quote": "@partial(jax.jit, static_argnums=(0,)); def batch_elbo(ln_prob, rng, vi_params, nsamples: int) -> float:; rngs = random.split(rng, nsamples)"
+        },
+        {
+          "lines": [
+            35,
+            37,
+            45,
+            47
+          ],
+          "quote": "threefry_split(key, num); return _threefry_split(key, int(num)); Traced<ShapedArray(int32[], weak_type=True)>; depends on the value of the argument passed at flattened position 7"
+        }
+      ],
+      "limits": [
+        "Archived failure; no replay or complete execution history verified."
+      ]
+    }
+  },
+  {
+    "case": "NB-004",
+    "group": "owner:andrequant",
+    "family": "shape-reshape (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "reshape(x.shape) of sliced jnp.array(params) in set_model_params",
+      "operand_or_axis": "Empty slice shape (0,), size 0, versus model leaf shape (1,3), size 3.",
+      "explanation": "The saved trace fails reconstructing a model leaf. Source makes particles a list of 30 full vectors, then vmaps axis 0 of this list. Each vector leaf is mapped over its parameter axis, so mapped params is a list of 30 scalars and jnp.array(params) has length 30. The shown 1->3->3->3->1 model has 34 array parameters: its final weight slice starts at offset 30 and is empty. This is a source-derived explanation of the recorded reshape.",
+      "anchors": [
+        "cell 7 L11: list of particle vectors",
+        "cell 7 L22-30: offsets, slice, reshape",
+        "cell 7 L42: vmap(...,in_axes=(0,None,None,None,None,None))",
+        "cell 4 L4-9 and cell 2 L24-25: model dimensions",
+        "cell 8 L3; saved set_model_params line 25",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/andrequant/Warwick-Final-Project/blob/e86df38934be85614ed4ec5b7775215c80dcb5c9/neuralPDE/Old/PINN%20Particle%20Swarm.ipynb",
+          "git_blob": "4818e7b902cb280aad759f8bc25c668b16388270",
+          "notebook_sha256": "22f093f878b9a58f1d733e26c9f2207d9a6a820b028d957e6afe2e6f11ee4ef4",
+          "target_cell_zero_based": 8,
+          "target_source_sha256": "b06fa40b9365c5f82eac589ce49849eabf7ae83fc9942ddd7d50a09fef223bf7",
+          "saved_trace_sha256": [
+            "aac56135a6223870551729ffad789930927be4199ca85af72df34e28a238da8c"
+          ]
+        }
+      ],
+      "limits": [
+        "The list/vmap explanation is static reasoning, not replay. Minimum diagnosis is an empty parameter slice reshaped to (1,3); do not require an optimization iteration."
+      ]
+    }
+  },
+  {
+    "case": "NB-013",
+    "group": "owner:compwa",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "NumPy asarray(x) in scimath._fix_real_lt_zero, called by np.emath.sqrt under jax.jit",
+      "operand": "the traced scalar argument x from jax_csqrt_error(-1), recorded as int32[]",
+      "why": "JIT traces the argument. NumPy's complex-sqrt helper attempts a concrete host-array conversion before its negative-value branch can run; Tracer.__array__ refuses that conversion.",
+      "source_anchors": [
+        {
+          "cell": 4,
+          "lines": [
+            3,
+            5
+          ],
+          "quote": "import jax; import numpy as np"
+        },
+        {
+          "cell": 22,
+          "lines": [
+            1,
+            2
+          ],
+          "quote": "jax_csqrt_error = jax.jit(np.emath.sqrt, backend=\"cpu\"); jax_csqrt_error(-1)"
+        }
+      ],
+      "trace_anchors": [
+        {
+          "lines": [
+            213,
+            222,
+            225,
+            233,
+            237
+          ],
+          "quote": "numpy/lib/scimath.py:247, in sqrt(x); x = _fix_real_lt_zero(x); numpy/lib/scimath.py:134, in _fix_real_lt_zero(x); x = asarray(x); TracerArrayConversionError"
+        }
+      ],
+      "limits": [
+        "The negative input does not establish a complex-domain arithmetic failure; conversion fails first."
+      ]
+    }
+  },
+  {
+    "case": "NB-003",
+    "group": "owner:alexrutherford",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "jnp.dot(x,y) inside custom_dot",
+      "operand_or_axis": "x axis 1 length 3 versus y axis 0 length 2.",
+      "explanation": "Both inputs are (2,3) matrices. Dot contracts columns of x with rows of y and fails before squaring the result.",
+      "anchors": [
+        "cell 33 L1-2: return jnp.dot(x,y)**2",
+        "cell 37 L1-7: matrix definitions",
+        "cell 38 L1; saved custom_dot line 2",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/alexrutherford/jax_101/blob/25ca23feb89efa1f0a562fada1ef7073d3039a30/notebook_pres.ipynb",
+          "git_blob": "c9ee74424ac3121f43fd6d62ea329c3f0091d754",
+          "notebook_sha256": "52dae2f2fb8d67d9810b39ae810b501b29eed96ada7aca411280a60e41fc8973",
+          "target_cell_zero_based": 38,
+          "target_source_sha256": "ef04109b297992c89e428f4906b4b35be3832aaf5b3e96b2b234fcd194989df8",
+          "saved_trace_sha256": [
+            "0ed508d913cea1d9a039f6bf014cfaa7ba234b85a50fb1bd436cdc16c8772779"
+          ]
+        }
+      ],
+      "limits": [
+        "Closely shares the NB-056 tutorial pattern; rows do not establish independent families."
+      ]
+    }
+  },
+  {
+    "case": "NB-012",
+    "group": "owner:code-first-ml",
+    "family": "scalar",
+    "eligible": true,
+    "key": {
+      "operation": "eval_logprior sum.item(), invoking float(self)",
+      "operand_or_axis": "The kernel-plus-bias prior log_prob sum is a float32[1,1] tracer.",
+      "explanation": "The RMH kernel is evaluated inside jitted one_step under scan. eval_logprior calls item on a traced sum; the recorded item implementation calls Python float, requiring a concrete value unavailable during tracing.",
+      "anchors": [
+        "cell 18 L1-4: prior sum and item",
+        "cell 22 L1-2: log joint",
+        "cell 24 L6-7: RMH",
+        "cell 26 L2-8: jit and scan",
+        "saved device_array.item line 229",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/code-first-ml/book1/blob/8d46f773bd1fdaf3c52a9182a1ad497040eae4c2/notebooks/neural_networks/.ipynb_checkpoints/flax-blr-checkpoint.ipynb",
+          "git_blob": "f0c53823904919f9903d3f1ae0a116e1cf1b3a61",
+          "notebook_sha256": "c8458ace3a7d8bcf2123e6d35ed0d2cf792a8e09414676772855d9b331d1152e",
+          "target_cell_zero_based": 27,
+          "target_source_sha256": "f8cf2909f3e6c22d21380ac153e5b7958f63e1b72796d8bee2e920d6299150f2",
+          "saved_trace_sha256": [
+            "a6ff2b2851034ec2cf1f1048ce2bd3d44326af354c68327640fb5e657777c6cd"
+          ]
+        }
+      ],
+      "limits": [
+        "Do not blame eval_ll.sum() or require parameter values."
+      ]
+    }
+  },
+  {
+    "case": "NB-036",
+    "group": "owner:olive004",
+    "family": "shape-reshape (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "jnp.array(analytics[k]).reshape(n_samples,n_perturbs,-1)",
+      "operand_or_axis": "Array (576037,9), 5184333 elements, versus fixed reshape axes 845000 and 7.",
+      "explanation": "The fixed axes require a multiple of 5915000 elements. 5184333 is not divisible by that product, so an inferred last dimension cannot preserve size. n_samples is interactions.shape[0]; n_perturbs is interaction count plus resimulation flag.",
+      "anchors": [
+        "cell 3 L4-12: dimensions and reshape",
+        "cell 24 L1-4: analytics_1127 call",
+        "saved add_rugg line 12 and complete shape error",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/olive004/EvoScaper/blob/8a31f3674c55d5751e4116021bff9060bdde4eb7/notebooks/14_ruggedness_add.ipynb",
+          "git_blob": "be1a0b60e4dcbd023be17a2d6ccad6c0c230d36e",
+          "notebook_sha256": "3208141e0ceb1c0f5ad9e7e23ef61ddefb73c1c7739be614d01f67313064532b",
+          "target_cell_zero_based": 24,
+          "target_source_sha256": "a089c5f8a8529861fac4f90df0939aae005bd907d367b8fa6d4bfa80701fa2ae",
+          "saved_trace_sha256": [
+            "3eb39f9c38b5910dd9696077e0ff25b2bfb176c7dabf097e1bfc45f6e930f6fc"
+          ]
+        }
+      ],
+      "limits": [
+        "Exact objective key, missing-data history and desired trailing size are not determined."
+      ]
+    }
+  },
+  {
+    "case": "NB-014",
+    "group": "owner:compwa",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "host-array conversion while evaluating the NumPy-backed lambdified Piecewise square-root expression under jax.jit",
+      "operand": "the traced scalar x passed to jax_complex_sqrt_error(-1), recorded as int32[]",
+      "why": "The source creates np_complex_sqrt with the NumPy lambdify backend and jits it. Its recorded generated expression invokes less/select/sqrt on traced x; execution reaches Tracer.__array__ rather than producing a staged JAX expression.",
+      "source_anchors": [
+        {
+          "cell": 35,
+          "lines": [
+            1
+          ],
+          "quote": "np_complex_sqrt = sp.lambdify(x, complex_sqrt(x), np)"
+        },
+        {
+          "cell": 40,
+          "lines": [
+            1
+          ],
+          "quote": "jax_complex_sqrt_error = jax.jit(np_complex_sqrt)"
+        },
+        {
+          "cell": 42,
+          "lines": [
+            1
+          ],
+          "quote": "jax_complex_sqrt_error(-1)"
+        }
+      ],
+      "trace_anchors": [
+        {
+          "lines": [
+            191,
+            193,
+            195
+          ],
+          "quote": "File <lambdifygenerated-4>:2, in _lambdifygenerated(x); return (select([less(x, 0),True], [1j*sqrt(-x),sqrt(x)], default=nan)); TracerArrayConversionError"
+        }
+      ],
+      "limits": [
+        "The trace marks the whole generated expression. Do not attribute the failure uniquely to np.select, a selected branch, or a computed numeric value. This shares a notebook with NB-013."
+      ]
+    }
+  },
+  {
+    "case": "NB-005",
+    "group": "owner:angellicodigo",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "self.weight @ x in the first Equinox Linear",
+      "operand_or_axis": "Weight input width 3 versus input matrix axis 0 length 10001.",
+      "explanation": "x_phys stacks three trajectories, each with initial state plus 10000 steps, into (10001,3). loss_fn calls model(x_phys) directly. Linear(3,50) contracts its weight feature axis with the matrix row axis, giving 3 versus 10001.",
+      "anchors": [
+        "cell 5 L2-3,L19-23: trajectory length",
+        "cell 6 L3-6: x_phys",
+        "cell 7 L8,L12-13: layer1 and direct call",
+        "cell 8 L3; saved _linear.py line 102",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/angellicodigo/Physics-Informed-Neural-Networks-For-Climate/blob/a14c0949439eb1754d6f3091ce5359c60e136b12/PINNs/Lorenz%20System/Lorenz%20System%20%28JAX%29.ipynb",
+          "git_blob": "5481f8401ea4473d97cd8cfb49dd4e850f6e9244",
+          "notebook_sha256": "ef3913eaea506dfaaf65b2f0aa23257b04ebc4c46bc902ae6152bcfab8f97383",
+          "target_cell_zero_based": 11,
+          "target_source_sha256": "8ffed860d439e2dff65b55e7da4920a16a5dd0a2288b69f31cf306b6598d16b8",
+          "saved_trace_sha256": [
+            "f928f2c962faf884c516f63836a9d5e490dbea80a3574bb185cb0c7b40ebf346"
+          ]
+        }
+      ],
+      "limits": [
+        "No claims about later optimizer defects."
+      ]
+    }
+  },
+  {
+    "case": "NB-023",
+    "group": "owner:jerzydziewierz",
+    "family": "scalar",
+    "eligible": true,
+    "key": {
+      "operation": "math.sqrt in Octonion.cal_norm, invoking float conversion",
+      "operand_or_axis": "Scalar int32 tracer from the sum of squared components constructed from global j1 slices.",
+      "explanation": "Jitted octmult ignores formal x,y and constructs Octonions from global j1,j2. The first constructor computes its norm with Python math.sqrt on traced component arithmetic, requiring an unavailable concrete Python number.",
+      "anchors": [
+        "cell 3 L12-13,L18-25: wrapper, globals and jit",
+        "saved Octonion.__init__ line 18 and cal_norm lines 29-38",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/jerzydziewierz/lm_kata_01/blob/a86260383e3c5e362f9bec4f49424347dd5ae46d/06_try_octinion.ipynb",
+          "git_blob": "c934c10cf422fd28041d0db55fe9cc9756bbfa3b",
+          "notebook_sha256": "476e5c17b4b6577fb096b26f58c610027970e93679bb37f874245274bd986963",
+          "target_cell_zero_based": 3,
+          "target_source_sha256": "059f9f728884c926a74910f56cea64b98dcc9bb947f2fb69f941cd7a039ffcec",
+          "saved_trace_sha256": [
+            "47bbd5bccf21853727a6f00aa5aa9ae5d8d7e323a7553446e18d49ba82e33368"
+          ]
+        }
+      ],
+      "limits": [
+        "Do not claim the tracer originates from formal x. External implementation evidence is from the saved stack only."
+      ]
+    }
+  },
+  {
+    "case": "NB-046",
+    "group": "owner:shiyu-zhou-7",
+    "family": "shape-reshape (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "A.reshape([chiL,dL,chi_keep]) in split_and_truncate",
+      "operand_or_axis": "A=(2,2), size 4; requested [1,2,20], size 40.",
+      "explanation": "The DMRG bond update reaches a reshape that uses chi_keep=20 despite A containing only four elements. Reshape cannot create the required forty elements.",
+      "anchors": [
+        "cell 4 L13,L17,L33: chi_max and DMRG call",
+        "saved update_bond line 108: split_and_truncate",
+        "saved mps.py lines 184-187: S truncation then A reshape",
+        "saved (2,2) -> [1,2,20] error",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/shiyu-zhou-7/diff_phase/blob/d2f7e4148b31d844769200661f8162542ec18412/xxz_dmrg/mps/dmrg_jax_lanczos.ipynb",
+          "git_blob": "6c103b2f3fed816882f74666b61e18265e02ecb5",
+          "notebook_sha256": "c7b5d80e956dfe1044eca5f4bd8065f5c86147e450fa9e39355e78cbb7fea535",
+          "target_cell_zero_based": 4,
+          "target_source_sha256": "264561e44b663cccb71f29aa756a2db024147b26fcfd58e6ac84afa843acc56c",
+          "saved_trace_sha256": [
+            "51007e3bc0f9ea9710038db5da6f793b7585ce4a306f2f841b5cedd2478edef7"
+          ]
+        }
+      ],
+      "limits": [
+        "Why chi_keep exceeds available columns or whether padding happened is not established. Do not require an unshown SVD-rank bug."
+      ]
+    }
+  },
+  {
+    "case": "NB-015",
+    "group": "owner:cpehle",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "np.power(s.n, 4) in I_K during the scan-traced integrator",
+      "operand": "the state channel value s.n, recorded as a float64[7430] tracer",
+      "why": "The earlier notebook first binds np to jax.numpy, then rebinds np to host NumPy in cell 10. I_K resolves that name at execution. The recorded call through hodgekin_huxley_current reaches host np.power on traced state during lax.scan and requests __array__.",
+      "source_anchors": [
+        {
+          "cell": 1,
+          "lines": [
+            1
+          ],
+          "quote": "import jax.numpy as np"
+        },
+        {
+          "cell": 10,
+          "lines": [
+            2
+          ],
+          "quote": "import numpy as np"
+        },
+        {
+          "cell": 6,
+          "lines": [
+            5,
+            6
+          ],
+          "quote": "def I_K(s: HodgekinHuxleyState, p: HodgekinHuxleyParameters):; return p.g_K * np.power(s.n, 4) * (s.v - p.E_K)"
+        },
+        {
+          "cell": 12,
+          "lines": [
+            33
+          ],
+          "quote": "_, actual = integrator(initial_state)"
+        }
+      ],
+      "trace_anchors": [
+        {
+          "lines": [
+            17,
+            65,
+            68,
+            73,
+            75,
+            77,
+            79,
+            85,
+            86
+          ],
+          "quote": "return jax.lax.scan(f, init, xs, length); MultiCompartmentNeuronModel.explicit_terms; hodgekin_huxley_current; I_K; return p.g_K * np.power(s.n, 4) * (s.v - p.E_K); float64[7430]"
+        }
+      ],
+      "limits": [
+        "Cell order alone is not execution history; the traceback independently supports the failing host conversion. NB-016 has substantially shared helper and trace content and is not an independent repair family."
+      ]
+    }
+  },
+  {
+    "case": "NB-007",
+    "group": "owner:babayara",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "self.weight @ h via _standard_forward_cache layer(h)",
+      "operand_or_axis": "Weight contraction length 1 versus boundary vector length 2.",
+      "explanation": "boundary is explicitly [0.0,1.0]. opt.step passes it through its boundary cache to an Equinox Linear applied directly to that vector. The saved trace reports contraction lengths 1 and 2.",
+      "anchors": [
+        "cell 1 L5,L14-16: imported model and boundary",
+        "cell 2 L2: opt.step",
+        "saved pinn_kfac.py lines 697,854; _linear.py line 97",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/BabaYara/KFAC_PINN/blob/7023b81e580711d05f452c1c5f0cdbc98341f6d6/examples/pinnkfac_poisson.ipynb",
+          "git_blob": "b690cfaca10ecb705491604d035e62e4a8736228",
+          "notebook_sha256": "ff087c961d46f6931ea8d30abce2da37a75117011239822287f93bb8bacdad78",
+          "target_cell_zero_based": 2,
+          "target_source_sha256": "552b4c4527ad10561e73a07efe52a830a7633a939429133182277917f5233977",
+          "saved_trace_sha256": [
+            "b8c675df44220852974c0cd54452243a8652a59fb40e9f6576b41ca27ed6f3c0"
+          ]
+        }
+      ],
+      "limits": [
+        "Imported make_mlp and full weight shape are not established; require input width 1 from the trace only."
+      ]
+    }
+  },
+  {
+    "case": "NB-024",
+    "group": "owner:jerzydziewierz",
+    "family": "scalar",
+    "eligible": true,
+    "key": {
+      "operation": "float(e) in Quaternion._validate_number_sequence",
+      "operand_or_axis": "A scalar component of traced x passed through jnp2quaternion.",
+      "explanation": "quatmult is jitted. jnp2quaternion passes x[0:4] components to Quaternion, whose recorded validation calls [float(e) for e in seq]. Python float cannot convert the dynamic int32 tracer while tracing.",
+      "anchors": [
+        "cell 4 L7-8,L11-19: inputs, wrapper and jit",
+        "cell 5 L1: call",
+        "saved Quaternion.__init__ line 133; validation line 148",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/jerzydziewierz/lm_kata_01/blob/a86260383e3c5e362f9bec4f49424347dd5ae46d/06_try_octinion.ipynb",
+          "git_blob": "c934c10cf422fd28041d0db55fe9cc9756bbfa3b",
+          "notebook_sha256": "476e5c17b4b6577fb096b26f58c610027970e93679bb37f874245274bd986963",
+          "target_cell_zero_based": 5,
+          "target_source_sha256": "8ad20b01e235a370178601c309a14a214d9c640fbbc75d8b77972c9cc91173cc",
+          "saved_trace_sha256": [
+            "17ef2ac90e678a48e13ad558df4c46b4509a94871a1221a356883a4471865232"
+          ]
+        }
+      ],
+      "limits": [
+        "Failure occurs in the first construction, before quaternion multiplication."
+      ]
+    }
+  },
+  {
+    "case": "NB-055",
+    "group": "owner:tomas-stone",
+    "family": "shape-reshape (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "x.reshape(config[\"NUM_ACTORS\"]) in tree_map over info",
+      "operand_or_axis": "An info leaf is (16,), size 16; NUM_ACTORS requests 32.",
+      "explanation": "env.step is vmapped over 16 environments. The code reshapes all info leaves to env.num_agents*NUM_ENVS; the recorded selected leaf has only 16 entries, so a 32-entry reshape cannot preserve size.",
+      "anchors": [
+        "cell 10 L118: actor count",
+        "cell 10 L180-185: vmapped env.step and reshape",
+        "cell 11 L6,L31-32: 16 environments and training",
+        "saved lambda line 185: (16,) -> 32",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/Tomas-Stone/Marl-Dreamer/blob/6279de991b90d008b549a87372eb56c704b214c6/src/notebooks/JaxMARL_Walkthrough.ipynb",
+          "git_blob": "0edbe1428d9b6afd210650a4204ad72de1ada1d7",
+          "notebook_sha256": "ab02c84e1b563a7ab34f087eae7944c9a75d72348391505754dc73e964d58042",
+          "target_cell_zero_based": 11,
+          "target_source_sha256": "9f001b8e6c78dd12a7abd1d56029fbbf03d90ace1c237c03832c2e755d34a2ac",
+          "saved_trace_sha256": [
+            "1614f51259a1b97e2babbc40e5a0c7d0a00e171bf513b77c8d4796e20f4987e7"
+          ]
+        }
+      ],
+      "limits": [
+        "Exact info key is not identified. Do not require a wrapper metric name, seed-axis explanation or later plotting diagnosis."
+      ]
+    }
+  },
+  {
+    "case": "NB-018",
+    "group": "owner:envfluids",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "host NumPy sin(x), at the start of np.sin(x)**2 + np.cos(x)**2 in jitted numpy_jax_func",
+      "operand": "dynamic argument x, recorded as a float32[10000] tracer",
+      "why": "The same cell explicitly imports host NumPy as np and decorates numpy_jax_func with jit. Tracing replaces x with a tracer; the host NumPy expression attempts __array__ instead of composing JAX operations. The first warm-up call to numpy_jax_func raises before timing loops.",
+      "source_anchors": [
+        {
+          "cell": 2,
+          "lines": [
+            3,
+            15,
+            16,
+            17,
+            24
+          ],
+          "quote": "import numpy as np; @jit; def numpy_jax_func(x):; return np.sin(x) ** 2 + np.cos(x) ** 2; _ = numpy_jax_func(x)"
+        }
+      ],
+      "trace_anchors": [
+        {
+          "lines": [
+            6,
+            12,
+            15,
+            21,
+            22
+          ],
+          "quote": "_ = numpy_jax_func(x); in numpy_jax_func(x); return np.sin(x) ** 2 + np.cos(x) ** 2; float32[10000]; for jit"
+        }
+      ],
+      "limits": [
+        "No array element values or benchmark timing conclusions are needed or inferred."
+      ]
+    }
+  },
+  {
+    "case": "NB-008",
+    "group": "owner:bussilab",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "np.matmul(g,lambdas) in gamma_function",
+      "operand_or_axis": "g contracting length 8 versus lambdas contracting length 0.",
+      "explanation": "The saved loss_function trace calls gamma_function with per-system flattened data and lambda arguments. Its matmul cannot contract eight features with an empty lambda operand. The notebook supplies fixed_lambdas=my_lambdas, originating from out.minis[\"AAAA\"].x.",
+      "anchors": [
+        "cell 120 L1: lambda source",
+        "cell 121 L1: fixed_lambdas call",
+        "saved loss_and_minimizer.py lines 660-661: gamma arguments",
+        "saved gamma_function line 98: np.matmul(g,lambdas), [8] versus [0]",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/bussilab/MDRefine/blob/081a596fde6c640d7cf50f9b300e7d067cf62fa3/tests/computations.ipynb",
+          "git_blob": "8683f53dacfe843c451777f08244ad3a522121e8",
+          "notebook_sha256": "0f8a6ba01145fcadcf3a40d1cd30c40866ef5d99d981f97ab71d7d29fa44c74a",
+          "target_cell_zero_based": 121,
+          "target_source_sha256": "c219b3899f95d637ee5e0fdb0e48919b90a68a902f16942427a91b8acd21f3c8",
+          "saved_trace_sha256": [
+            "fd7e1560bd1fa1c9c403f403c184ade2dc5f8e3b3e4b292a87771e0fe638e3e2"
+          ]
+        }
+      ],
+      "limits": [
+        "Why the selected lambda operand became empty is unknown. Do not assert my_lambdas itself was empty, identify a system, or invent full g shape. Imported helper behavior is historical evidence."
+      ]
+    }
+  },
+  {
+    "case": "NB-042",
+    "group": "owner:sandeshkatakam",
+    "family": "scalar",
+    "eligible": true,
+    "key": {
+      "operation": "Python float(x) after x.mean() in another_graph traced by make_jaxpr",
+      "operand": "the mean of the transformed argument, a recorded float32[] tracer dependent on input x",
+      "why": "make_jaxpr stages another_graph with abstract input. Its mean is still a traced scalar; converting it to a Python float requires a concrete value that is unavailable while tracing.",
+      "source_anchors": [
+        {
+          "cell": 7,
+          "lines": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "quote": "def another_graph(x):; x = x**2; x = x+3; x = x.mean(); y = float(x)"
+        },
+        {
+          "cell": 8,
+          "lines": [
+            1
+          ],
+          "quote": "jax.make_jaxpr(another_graph)(inpt)"
+        }
+      ],
+      "trace_anchors": [
+        {
+          "lines": [
+            4,
+            10,
+            11,
+            24,
+            25,
+            26
+          ],
+          "quote": "jax.make_jaxpr(another_graph)(inpt); x = x.mean(); y = float(x); float32[]; The problem arose with the `float` function; depends on the value of the argument x"
+        }
+      ],
+      "limits": [
+        "Previously exposed/development tutorial case per task instruction. Do not report as an untouched case. No numerical mean is required."
+      ]
+    }
+  },
+  {
+    "case": "NB-019",
+    "group": "owner:graphiq-dev",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "host-array conversion at np.cos(theta / 2) in parameterized_one_qubit_unitary while differentiating compute_loss",
+      "operand": "the traced scalar gate parameter expression theta / 2, recorded as float32[]",
+      "why": "jax.grad traces the circuit parameters through compute_loss and compiler.compile. The archived call path enters the one-qubit gate expression and reaches Tracer.__array__ while evaluating its NumPy-style cosine term. This is a host conversion of a traced gate parameter before metric evaluation, not a formatting or optimizer problem.",
+      "source_anchors": [
+        {
+          "cell": 13,
+          "lines": [
+            4
+          ],
+          "quote": "grads = jax.grad(compute_loss)(params, circuit)"
+        },
+        {
+          "cell": 9,
+          "lines": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "quote": "def compute_loss(params: dict, circuit: CircuitDAG):; circuit.parameters = params; output_state = compiler.compile(circuit); cost = metric.evaluate(output_state, circuit)"
+        }
+      ],
+      "trace_anchors": [
+        {
+          "lines": [
+            6,
+            15,
+            34,
+            51,
+            73,
+            81,
+            83,
+            96
+          ],
+          "quote": "jax.grad(compute_loss)(params, circuit); compiler.compile(circuit); self.ops[op.__class__](*params); dm.parameterized_one_qubit_unitary; [np.cos(theta / 2), -np.exp(1j * lam) * np.sin(theta / 2)]; float32[]"
+        }
+      ],
+      "limits": [
+        "The module import/backend implementation is not independently staged. Do not infer why the configured JAX backend failed to govern this function, or infer numeric parameter values."
+      ]
+    }
+  },
+  {
+    "case": "NB-010",
+    "group": "owner:cctutum",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "jnp.dot(W,x) in layer(batch_x)",
+      "operand_or_axis": "W axis 1 length 100 versus batch_x axis 0 length 16.",
+      "explanation": "W=(64,100), batch_x=(16,100). Directly applying the single-vector layer to the full matrix contracts feature width 100 against batch rows 16.",
+      "anchors": [
+        "cell 9 L3-4: shapes",
+        "cell 10 L2-4: dot",
+        "cell 11 L1 and saved exception",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/cctutum/JAX_experiments/blob/94f71690f60a2759a78855edcd72f6cf26147a3b/LinkedInLearning_Learning_Jax/03_AutomaticVectorization.ipynb",
+          "git_blob": "859dae238b760966b53e1ca10ff649352d57272f",
+          "notebook_sha256": "72cb2a350c8d5f1d5d1ce13e655709e8bfae6fd0ceea766d3ab78120587d5fec",
+          "target_cell_zero_based": 11,
+          "target_source_sha256": "2972b42a6d6db643d6e94b7f6cb847c78d3d396c38eac5b52b0843f800dc535f",
+          "saved_trace_sha256": [
+            "b36f4d94734e9b59200b0d2bf8bd3488c06fb8ea08e259403af52cbf4e2c5808"
+          ]
+        }
+      ],
+      "limits": [
+        "Do not require additional dimensions or an unstated batch transform."
+      ]
+    }
+  },
+  {
+    "case": "NB-053",
+    "group": "owner:tmellan",
+    "family": "scalar",
+    "eligible": true,
+    "key": {
+      "operation": "int(jnp.max(n)) in NumPyro multinomial sampling",
+      "operand_or_axis": "Scalar int32 maximum of total_count n under predictive lax.map.",
+      "explanation": "Predictive is called without observations, so Multinomial(total_count=100) must sample. The historical sampler uses Python int on a traced JAX reduction, which cannot become concrete inside predictive mapping.",
+      "anchors": [
+        "cell 6 L16,L34: y=None and count=100",
+        "cell 7 L1: Predictive without y",
+        "saved soft_vmap: lax.map; discrete.py line 490: self.total_count",
+        "saved distributions/util.py line 216: n_max=int(jnp.max(n))",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/tmellan/compLV/blob/886047113720233fe3128fdcbeaf46f0f2aec604/py-notebooks/Competitive-Lotka-Volterra-multinomial-swapnil.ipynb",
+          "git_blob": "1df470667a0dc71d5a5bbbd4845b49f4bd736506",
+          "notebook_sha256": "f7aee076ea7660fa84aa1fa9d6830f6593ce343b4a0a85ee9421ace8a82ac409",
+          "target_cell_zero_based": 7,
+          "target_source_sha256": "0d1d0fabba912654538344d597b816937df41b2ff5b761fccf8e4a255dd291e4",
+          "saved_trace_sha256": [
+            "2a9e0e330a51987a20f01a20de5305802da6034519b552d12e9384b9c274f404"
+          ]
+        }
+      ],
+      "limits": [
+        "Count is nominally fixed at 100, not sampled data. This is historical library behavior and shares a mechanism with NB-054."
+      ]
+    }
+  },
+  {
+    "case": "NB-022",
+    "group": "owner:jeong-seho",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "NumPy np.exp(x) in jitted my_func",
+      "operand_or_axis": "x is a float64[2] dynamic input tracer.",
+      "explanation": "Ordinary NumPy exp requests x.__array__ while JIT traces the function, when x has no concrete host value.",
+      "anchors": [
+        "cell 18 L1-3: imports",
+        "cell 39 L1-5: jit, exp and argument",
+        "saved my_func line 3",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/jeong-seho/numerical-methods/blob/3fd7b4fc60538f1a9f80eb366d339576d7f6990d/python/15_jax.ipynb",
+          "git_blob": "c757ad60aa589ac02ee7032e9bde81bd8933c96d",
+          "notebook_sha256": "967aa8d0b60463b6ea7f59e8b29cec41bef9d70a4eefc2d611ec88de3b7c5795",
+          "target_cell_zero_based": 39,
+          "target_source_sha256": "7aef27def3dbd1f55730ea30f96c7530d6308e754f3198b66f5b7764b7f5b4a0",
+          "saved_trace_sha256": [
+            "6e2e27417742b0a79d1dcf78645ccb331548b11dbd99edfbb7a38d59e3cd6aa5"
+          ]
+        }
+      ],
+      "limits": [
+        "No proposed patch is part of the diagnosis."
+      ]
+    }
+  },
+  {
+    "case": "NB-011",
+    "group": "owner:choltz95",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "scipy_sqp E=-E_0-(A@X+X@L)",
+      "operand_or_axis": "Sparse A@X contracts A axis 1 of extent 2499 with X axis 0 of extent 2498, as reported in the saved sparse matmul traceback.",
+      "conclusion": "cluster forms X_k_n from eig(P@A@P.T), yielding coordinates in the constraint-reduced space, then passes original A through ssm to scipy_sqp. The unreduced A and reduced X are inconsistent at A@X. The saved construction removes a fixed node and then a centering degree of freedom.",
+      "limit": "This is source/archival-trace support, not a fresh CPU replay. Imported graph/QR helpers are not executed; the precise 2499/2498 extents are corroborated by the trace.",
+      "citations": [
+        "earlier cell 6 lines 15-35 and 82-93",
+        "earlier cell 5 lines 74-81 and 190-220",
+        "errors[0].traceback lines 24-34 and 87"
+      ]
+    }
+  },
+  {
+    "case": "NB-054",
+    "group": "owner:tmellan",
+    "family": "scalar",
+    "eligible": true,
+    "key": {
+      "operation": "int(jnp.max(n)) in NumPyro multinomial sampling",
+      "operand_or_axis": "Scalar int32 maximum of total_count n under predictive lax.map.",
+      "explanation": "The later model also samples an unobserved Multinomial(total_count=100) in Predictive. Its recorded implementation converts the traced maximum to Python int and raises after reaching the y sampling site.",
+      "anchors": [
+        "cell 13 L26,L40: later model and count",
+        "cell 16 L1: Predictive without y",
+        "saved discrete.py line 490 and distributions/util.py line 216",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/tmellan/compLV/blob/886047113720233fe3128fdcbeaf46f0f2aec604/py-notebooks/Competitive-Lotka-Volterra-multinomial-swapnil.ipynb",
+          "git_blob": "1df470667a0dc71d5a5bbbd4845b49f4bd736506",
+          "notebook_sha256": "f7aee076ea7660fa84aa1fa9d6830f6593ce343b4a0a85ee9421ace8a82ac409",
+          "target_cell_zero_based": 16,
+          "target_source_sha256": "e1ac305a161f224d442aa90952508338729c9b064ac9eb1a1ace4055586f01ed",
+          "saved_trace_sha256": [
+            "4c060bdb9262d02f911c835009608554e586ea0b623f6d8a7673ee02ff4622e0"
+          ]
+        }
+      ],
+      "limits": [
+        "Do not blame ODE integration or require trans_data length. Same notebook and helper family as NB-053."
+      ]
+    }
+  },
+  {
+    "case": "NB-025",
+    "group": "owner:jskdr",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "TensorFlow eager tensor conversion of x while tf.reduce_sum obtains its reduction dimensions under jax.grad",
+      "operand": "the JAX differentiation tracer x, recorded with float32[2] primal/tangent structure",
+      "why": "df is grad(f), and f calls tf.reduce_sum(x). The trace goes through rank, convert_to_tensor and EagerTensor construction to JAX Tracer.__array__. A concrete primal shown in a differentiation tracer does not authorize host conversion of that tracer.",
+      "source_anchors": [
+        {
+          "cell": 18,
+          "lines": [
+            1
+          ],
+          "quote": "f = lambda x: tf.reduce_sum(x)"
+        },
+        {
+          "cell": 19,
+          "lines": [
+            1,
+            2
+          ],
+          "quote": "df = grad(f); x = np.ones((2,))"
+        },
+        {
+          "cell": 20,
+          "lines": [
+            1
+          ],
+          "quote": "df(x)"
+        }
+      ],
+      "trace_anchors": [
+        {
+          "lines": [
+            9,
+            21,
+            28,
+            49,
+            98,
+            105,
+            109,
+            113
+          ],
+          "quote": "tf.reduce_sum(x); _ReductionDims(input_tensor, axis); array_ops.rank(x); ops.convert_to_tensor(input); ops.EagerTensor(value, ctx.device_name, dtype); TracerArrayConversionError; JVPTrace; ShapedArray(float32[2])"
+        }
+      ],
+      "limits": [
+        "This diagnoses the recorded TensorFlow/JAX boundary, not every mixed-framework call."
+      ]
+    }
+  },
+  {
+    "case": "NB-017",
+    "group": "owner:elbrouw",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "A @ traj[i].T in doubleintegratormodel",
+      "operand_or_axis": "A last axis 2 versus initial state vector length 3.",
+      "explanation": "traj starts with [x,y,theta]. The loop sets A to a 2x2 matrix, so its first product contracts 2 against 3 before B@control.T or addition.",
+      "anchors": [
+        "cell 4 L2-3,L21: initial state and call",
+        "cell 3 L82-93: trajectory, A and product",
+        "saved doubleintegratormodel line 93",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/elbroUW/JohnnyBot/blob/3a3e6e0bfdae13a4a51cbe0edc1a62664f069570/DublinCarDemos.ipynb",
+          "git_blob": "18d64707b9f35759d234ef54b121ba791f0be66e",
+          "notebook_sha256": "ce445a219ac2426a354343c869bfaffbf2a9edf23eaf7fe6ad07179fc22791fa",
+          "target_cell_zero_based": 4,
+          "target_source_sha256": "822bc9ee3fa6f627c26545fe49861a21350b7a36b418f8470147a1cd8e7329a2",
+          "saved_trace_sha256": [
+            "56722c3f3237915ae11dc1fed51ea8555a6f3b4d840011df1a4f182c05a77f8c"
+          ]
+        }
+      ],
+      "limits": [
+        "A one-dimensional transpose does not change the length. Do not blame the later B product."
+      ]
+    }
+  },
+  {
+    "case": "NB-059",
+    "group": "owner:vaillus",
+    "family": "scalar",
+    "eligible": true,
+    "key": {
+      "operation": "int(2*a) for jnp.linspace num in _render_jax_core",
+      "operand_or_axis": "A scalar int32 expression dependent on dynamic core argument a.",
+      "explanation": "Arc.render_jax converts self.a to a JAX array and passes it to a jitted core. Python int(2*a) then requires a concrete Python integer during tracing, which dynamic a cannot provide.",
+      "anchors": [
+        "cell 4 L1: render call",
+        "saved Arc.render_jax lines 406-409: self.a and core",
+        "saved core line 17: num=int(2*a)",
+        "saved exception dependent on a",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/Vaillus/creative_coding/blob/5ca4e0911c361d7a230f993a371bb4c03f826fc5/maroc/maroc/lampe/test_plot.ipynb",
+          "git_blob": "d9c4985622db2718e5f624b2f16d6945022d0023",
+          "notebook_sha256": "143daef37604a2f3dadb6b8d24fbbb2038a9c52f0bc8e8cecdbdb43b44c7a272",
+          "target_cell_zero_based": 4,
+          "target_source_sha256": "daff9a5b44c5f4e45452e9529b18c51e95a6a181e94dd6e0d8c2247983c8cf54",
+          "saved_trace_sha256": [
+            "cb3011cbcc103b2adf3628e4c73d1fe4ebb937a767b4fd7e9a27b9bd88b5b878"
+          ]
+        }
+      ],
+      "limits": [
+        "The immediate failure is int, before linspace/meshgrid. Do not require radius value or identify later b conversion instead."
+      ]
+    }
+  },
+  {
+    "case": "NB-026",
+    "group": "owner:leoperelli",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "NumPy np.where(cluster_allocs==cluster_idx,False,True)",
+      "operand_or_axis": "bool[1000] tracer from dynamic cluster_allocs comparison.",
+      "explanation": "run_one_gibbs is jitted. Although cluster_idx is static in cluster_update, cluster_allocs is dynamic; its comparison creates a Boolean tracer which NumPy where tries to materialize. The failure precedes np.delete.",
+      "anchors": [
+        "cell 3 L6,L9: NumPy and jit",
+        "cell 10 L7-10,L18-24: mask and call",
+        "cell 12 L2; saved cluster_update line 9",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/LeoPerelli/BayesMixtureModeling/blob/ef493bf45f327aaec56d463be84fab4b93d8b79b/Under%20Development/Manuel/Create%20cluster%20NIW.ipynb",
+          "git_blob": "dd4d59dc0931e06a90a6018707566d12ec2d63ab",
+          "notebook_sha256": "bcbb49f7478fc4ac65ab1976037bfacf217f0ed55c15bb0924bc214d1d1faaec",
+          "target_cell_zero_based": 12,
+          "target_source_sha256": "2eb057d52f1f1cd904f29907412cf637ea0d97ba60661150f30d1b784f372d7b",
+          "saved_trace_sha256": [
+            "e2f86fef78a8d513b6f397428653d3abda3d0687a312d03969872c1418669126"
+          ]
+        }
+      ],
+      "limits": [
+        "Do not grade later delete/conditional failures as this operation."
+      ]
+    }
+  },
+  {
+    "case": "NB-020",
+    "group": "owner:hadrien-cornier",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "jnp.dot(w,activations) in predict",
+      "operand_or_axis": "First weight input width 14 versus training matrix row axis 712.",
+      "explanation": "Input width is X_train.shape[1], but training passes the entire row-batched X_train as activations. Left-multiplication contracts the feature width against the number of training rows; the saved trace supplies 14 and 712.",
+      "anchors": [
+        "cell 4 L19-23: preprocessing",
+        "cell 9 L10-11: input width",
+        "cell 11 L6-8,L26: full batch and dot",
+        "saved predict line 20",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/Hadrien-Cornier/cool-nn-stuff/blob/fe1bc60988debe32a422e3848e9edb715a9aaf25/nn_uncertainty_estimate_boolean_value.ipynb",
+          "git_blob": "d92f449848a1da66c0a53e5a9b4db25a99565793",
+          "notebook_sha256": "abfc3c2449ea90ab787d924ee11c61653a2b342b885d2561e8d0fc1dafe6457e",
+          "target_cell_zero_based": 11,
+          "target_source_sha256": "5834350c634e6e267a28f142b3317634fc537049aeb7bfb7d272ce8c883fed26",
+          "saved_trace_sha256": [
+            "83bb8927bb8a2ebb68d063f52191aee73b061bc7cb37c73afe88c5edd01c78e4"
+          ]
+        }
+      ],
+      "limits": [
+        "Exact counts are archival traceback evidence; the dataset was not reloaded."
+      ]
+    }
+  },
+  {
+    "case": "PR-001",
+    "group": "owner:ignaciomagana",
+    "family": "scalar",
+    "eligible": true,
+    "key": {
+      "operation": "gp.py module-level _DEFAULT_AXES m1 bound float(jnp.log(0.15))",
+      "operand_or_axis": "Python float demands a concrete scalar, while the JAX log executes under active _run jit tracing and produces a float64[] tracer.",
+      "conclusion": "prepare_redshift_prior_state imports marks during jit tracing; marks.models imports gw.populations.base, initializing the populations package and registry, which imports gp. The module-level JAX log then reaches Python float and fails. Literal input to log does not make a staged JAX result a concrete Python value in this context.",
+      "limit": "The test docstring mentions another historical float(zgrid[-1]) failure, but this saved trace stops earlier in gp import. The answer key must target the actual gp.py:156 conversion and import path, not the docstring's prior failure. Saved CPU reproduction only; no fresh replay.",
+      "citations": [
+        "raw_bundle tests/test_traced_prior_state.py lines 69-86 and 127-135",
+        "raw_bundle darksirens/redshift/prior.py lines 363-370",
+        "raw_bundle marks/models.py line 24",
+        "raw_bundle gw/populations/__init__.py lines 1-7",
+        "raw_bundle gw/populations/registry.py line 355",
+        "raw_bundle gw/populations/gp.py lines 154-159",
+        "trace lines 68-88"
+      ]
+    }
+  },
+  {
+    "case": "NB-028",
+    "group": "owner:lukasottenhof",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "NumPy transition-matrix indexing trans_mat[:, prev_state] inside scan-traced draw_state",
+      "operand": "prev_state, a recorded int32[1] tracer, used as an index into host NumPy trans_mat",
+      "why": "The earlier cells construct A with host np.array and store it as params.trans_mat. hmm_sample closes over that array, and lax.scan traces draw_state with a dynamic previous-state argument. NumPy indexing requests a concrete array representation of the traced index and invokes Tracer.__array__ before logit receives a result.",
+      "source_anchors": [
+        {
+          "cell": 3,
+          "lines": [
+            11
+          ],
+          "quote": "import numpy as np"
+        },
+        {
+          "cell": 7,
+          "lines": [
+            2
+          ],
+          "quote": "A = np.array(["
+        },
+        {
+          "cell": 9,
+          "lines": [
+            7
+          ],
+          "quote": "params = HMM(A, B, pi)"
+        },
+        {
+          "cell": 14,
+          "lines": [
+            4,
+            11,
+            18
+          ],
+          "quote": "trans_mat, obs_mat, init_dist = params.trans_mat, params.obs_mat, params.init_dist; logits = logit(trans_mat[:, prev_state]); final_state, states = jax.lax.scan(draw_state, initial_state, keys)"
+        }
+      ],
+      "trace_anchors": [
+        {
+          "lines": [
+            3,
+            12,
+            18,
+            20,
+            28,
+            29
+          ],
+          "quote": "/Users/kpmurphy/github/ssm-book/chapters/ssm/hmm.ipynb; lax.scan(draw_state, initial_state, keys); draw_state(prev_state, key); logits = logit(trans_mat[:, prev_state]); int32[1]; depends on the value of the argument 'prev_state'"
+        }
+      ],
+      "limits": [
+        "The saved trace names a different origin notebook. Treat this as a copied archival entry with unresolved origin/permission; source support is not permission or independent-group admission. No actual index value is inferred."
+      ]
+    }
+  },
+  {
+    "case": "NB-021",
+    "group": "owner:hsudhakaran",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "jnp.dot(v,self.W) in RBM.sample_hidden",
+      "operand_or_axis": "v last axis 1 versus W first axis 784.",
+      "explanation": "MNIST images gain a trailing singleton channel axis and are not flattened before batching. W is initialized for 784 visible units. Dot contracts the image batch last axis 1 against W first axis 784.",
+      "anchors": [
+        "cell 1 L2-5: images and expand_dims",
+        "cell 2 L10,L20-26: W and hidden dot",
+        "cell 3 L4,L15-22: visible width, batch and call",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/hsudhakaran/rbm-neurosym/blob/f8f9ffd7cb6cc618aca96e621b0a24fb34953c91/mnist_test.ipynb",
+          "git_blob": "c80ecefa477011e8af82318046be53f5ccca4954",
+          "notebook_sha256": "8e81823632b2ef550a8041ecaba2119aa166dc96304df02fe061c3a0ec8877da",
+          "target_cell_zero_based": 3,
+          "target_source_sha256": "e85e482d97ec6bffbfe5923ab49e2806e6fedb27bd67e695461fbd6366d483a6",
+          "saved_trace_sha256": [
+            "f9cdf504185cac32120e07be671a237cb272e764ba99e9b42491d52a5c4b9104"
+          ]
+        }
+      ],
+      "limits": [
+        "Do not treat image height/width as the reported length 1 or blame visible reconstruction."
+      ]
+    }
+  },
+  {
+    "case": "NB-029",
+    "group": "owner:marcogorelli",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "NumPy y[t] indexing in scan_fn",
+      "operand_or_axis": "t is a scalar int32 scan-index tracer; y is host data from arma_generate_sample.",
+      "explanation": "lax.scan traces scan_fn. Indexing the external NumPy observations with dynamic t requests conversion of that index through __array__, failing at y[t] before the later y[t-1] expression.",
+      "anchors": [
+        "cell 2 L1,L7: NumPy and y source",
+        "cell 9 L16-17,L37: scan function and scan",
+        "cell 10 L3; saved scan_fn line 17",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/MarcoGorelli/random-assorted-notebooks/blob/bbd472ac7b8f497042fd3e03201083fa775ef427/the_arima_variations_another_version.ipynb",
+          "git_blob": "11adf81fd1a1af61e00c02ba02c4b7b92ebda3a0",
+          "notebook_sha256": "f2a0075ef4fc3ec2cad5d69d988719268868423f88405c9d9831dae7f3bc6b54",
+          "target_cell_zero_based": 10,
+          "target_source_sha256": "59908d70bfec9f1e3f931dcf7351eae1c3d7d8a9d81469edc7afca9afb4a543d",
+          "saved_trace_sha256": [
+            "6c2d88a2bca99a7d6c81a30e8d5479f80351eb7437f04991753ea3d51d90bc13"
+          ]
+        }
+      ],
+      "limits": [
+        "The converted operand is the index t, not the observations. No observation values are established."
+      ]
+    }
+  },
+  {
+    "case": "NB-031",
+    "group": "owner:mgkumar138",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "inv_sigma @ df.T in learn",
+      "operand_or_axis": "inv_sigma=(64,64); df.T=(2,64), contracting 64 versus 2.",
+      "explanation": "There are 64 place cells with 2D centers and default one sigma per cell. Flattening sigmas and taking diag/inverse yields 64x64. Subtracting centers from the 2D state yields (64,2), so its transpose cannot be right-multiplied as shown.",
+      "anchors": [
+        "cell 1 L1-8: centers and default sigmas",
+        "cell 3 L3,L12,L20: npc and state",
+        "cell 2 L22-25: construction and product",
+        "cell 6 L2; saved learn line 25",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/mgkumar138/online_pf_learning/blob/379223eb2f713705eadba7400c55619c7c91fcc5/jax/2D/compare_jax_numpy_2sigma.ipynb",
+          "git_blob": "625085b7d7348881c34c0830cb422067f2768219",
+          "notebook_sha256": "aff296918a1092bec9d1ce378492e5e7683b117d69b2298e52771bdc8d76077b",
+          "target_cell_zero_based": 6,
+          "target_source_sha256": "f420bbc25cf483e9d0f8020d6a2ae9a0d0590170b883d7624a11a8fa6a029b12",
+          "saved_trace_sha256": [
+            "91c192f5ed8609b69dc9431d0106e0e0c0ddb97198ef9bfc07c620d738bce576"
+          ]
+        }
+      ],
+      "limits": [
+        "This is the recorded shape failure, not a tracer conversion. No later outer-product diagnosis is required."
+      ]
+    }
+  },
+  {
+    "case": "NB-033",
+    "group": "owner:nickwilliamsdev",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "NumPy np.array(epoch_start), before .item(), in TradingProblemTopK.evaluate",
+      "operand_or_axis": "epoch_start is an int32 BatchTracer from TradingPipeline.step vmap.",
+      "explanation": "auto_run traces a jitted step, which vmaps evaluate over epoch-start values. np.array attempts host conversion of this scalar tracer and fails before item or the later INPUTS slice.",
+      "anchors": [
+        "cell 5 L5,L35-38: NumPy and evaluate",
+        "cell 6 L52: auto_run",
+        "saved neat_trading_pipeline.py lines 106-108,145: mapped randStart_full and compilation",
+        "saved evaluate line 36",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/nickwilliamsdev/treetrader/blob/8839d5b8e7ac4751cb74e34f2b86262efc435d93/tensorneat_ranknet.ipynb",
+          "git_blob": "c53e5811d3f0aaec612057dfabd055efd4fee810",
+          "notebook_sha256": "368520f9c802234688a445744e715a227502e8ffcd53da85b1be74def2323201",
+          "target_cell_zero_based": 6,
+          "target_source_sha256": "d093b834dd0e7adda35448967aad24bd4734dc0194accbe22979b4bb74de9450",
+          "saved_trace_sha256": [
+            "e7199af80f4a0a73fa6a34946c519f13076bc346d8526c89cac0d12db13b172f"
+          ]
+        }
+      ],
+      "limits": [
+        "The numeric epoch index is unavailable. Do not identify item as the operation that raised."
+      ]
+    }
+  },
+  {
+    "case": "NB-038",
+    "group": "owner:pllagunos",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "jnp.tensordot(jnp.diag(Ss[i]),Bs[i],(1,0)) in get_theta2",
+      "operand_or_axis": "Left boundary diag(Ss[0]) axis 1 length 1 versus Bs[0] axis 0 length 8.",
+      "explanation": "Every B is initialized as (chi,2,chi), including the boundary; Ss[0] is ones(1). CHI_MAX=8. The first bond calculation contracts that one-element diagonal with an eight-entry left tensor axis.",
+      "anchors": [
+        "cell 0 L57: contraction",
+        "cell 0 L73-74: first bond",
+        "cell 0 L122-123: Bs and Ss initialization",
+        "cell 0 L200,L203: chi=8 and call",
+        "saved get_theta2 line 57",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/pllagunos/MPS-gradient-descent/blob/d0970d57c963d18ba55eb8e34c0c04197699bf32/Tests/jaxtest.ipynb",
+          "git_blob": "60ab78cbafdbf6336835825c34381413c0fa6683",
+          "notebook_sha256": "d5c45fc42e2c581c32ae31b80a5cb2efd1cf33ec10533d3a608cb1e1638a6cba",
+          "target_cell_zero_based": 0,
+          "target_source_sha256": "1287817c29b6e1e9ffb5a43a1791c8c8410f106776989c85e3ae97a084279606",
+          "saved_trace_sha256": [
+            "dd475ca309e88520c88524bddccfe017ec23ae34d683d0c1175cab21b31e01b3"
+          ]
+        }
+      ],
+      "limits": [
+        "Failure precedes Hamiltonian contraction or optimization convergence."
+      ]
+    }
+  },
+  {
+    "case": "NB-034",
+    "group": "owner:ogaken1104",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "NumPy np.diag(mat), internally asanyarray(v), in pivoted_cholesky_numpy",
+      "operand_or_axis": "mat is a float64[1180,1180] JVP tracer of the kernel matrix.",
+      "explanation": "Optimization differentiates the objective with value_and_grad. K flows into setup_preconditioner and its NumPy diagonal extraction. np.diag attempts host array conversion of a JVP tracer, which is invalid even when a concrete primal is printed.",
+      "anchors": [
+        "cell 19 L6-9: K and preconditioner",
+        "cell 25 L3-5: optimization",
+        "saved optimizers.py line 158: value_and_grad",
+        "saved pivoted_cholesky_numpy.py line 22: np.diag(mat).copy()",
+        "saved numpy twodim_base.py line 295: asanyarray(v)",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/ogaken1104/duplication_bbmm/blob/709907e7cde6dfc31cc7b5017434a109db48b330/1120_train_predict_sp_scale.ipynb",
+          "git_blob": "deb9b7be2bce8ccb82981717aab81c150c4dd067",
+          "notebook_sha256": "08ff221eba2f3abc26a4b4fda78aa7f33319216363133f3e794f724c3885d580",
+          "target_cell_zero_based": 25,
+          "target_source_sha256": "a54b89f708acc0ee5a76d2f7bc02e379fee4de3d0e86af607286794173c17680",
+          "saved_trace_sha256": [
+            "7ff873397942a56906808e3962caf1c27904e9a3c256055c2aa0532be938cc4c"
+          ]
+        }
+      ],
+      "limits": [
+        "copy has not executed. Numeric entries and the reason for choosing this helper are not required."
+      ]
+    }
+  },
+  {
+    "case": "NB-040",
+    "group": "owner:rumoa",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "jnp.dot(jnp.conjugate(vec_rho).T,vec_measurement_op) in compute_p",
+      "operand_or_axis": "State contraction length 4 versus vectorized Bell measurement length 16.",
+      "explanation": "The notebook physical model uses a vectorized 2x2 initial state but the target supplies a vectorized projector built from two-qubit Bell kets. The saved probability dot cannot contract state length 4 with measurement length 16.",
+      "anchors": [
+        "cell 8 L23 and cell 11 L6: initial state",
+        "cell 16 L1-5 and cell 19 L1: Bell projectors",
+        "cell 22 L1: call",
+        "saved all_funcs.py lines 157,89: evolve then probability dot",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/Rumoa/qll_qdots/blob/b6017397e51486d472af6f4b0d31faad13c36a9e/old_sketchy_files/embedding_two_qubits.ipynb",
+          "git_blob": "b4602b1c482e340814b3a5a959adca801a9b1edf",
+          "notebook_sha256": "15167e7886c39ec60b1243f9d3469c9b244f6f5a34c8b2787919330858e303f2",
+          "target_cell_zero_based": 22,
+          "target_source_sha256": "1a6d49c2d445c06e5f947c5f6e8aa2fcd5b18043aadbf766d413957d83c6eb6c",
+          "saved_trace_sha256": [
+            "63582f489dfe048f5595cf41bae43272d05ff33ae9758291671aaf6efe5986ed"
+          ]
+        }
+      ],
+      "limits": [
+        "Parameter files, true_L and vec implementation were not loaded. Do not require full row/column shapes or an unshown d binding."
+      ]
+    }
+  },
+  {
+    "case": "NB-037",
+    "group": "owner:peiyong-addwater",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "Tensor.np.array(self.modules.pi * self.phase) in DisCoPy Rx.array during circuit evaluation under jit(grad(loss_1))",
+      "operand": "the parameter-dependent scalar gate-phase product, recorded as float32[] differentiation tracer",
+      "why": "The loss evaluates parameterized circuits while gradient tracing is active. The saved call path enters Rx.array and requests a host array for the phase product; Tracer.__array__ refuses it. The error occurs within circuit evaluation before the outer jnp.array prediction assembly can make the computation compatible.",
+      "source_anchors": [
+        {
+          "cell": 33,
+          "lines": [
+            3,
+            4
+          ],
+          "quote": "training_loss = jit(loss_1); gradient = jit(grad(loss_1))"
+        },
+        {
+          "cell": 32,
+          "lines": [
+            6,
+            8
+          ],
+          "quote": "np_circuits = [c.lambdify(*vocab_1)(*tensors) for c in train_circuits_1]; predictions =  sigmoid(jnp.array([[jnp.real(jnp.conjugate(c.eval().array[0])*c.eval().array[0]), jnp.real(jnp.conjugate(c.eval().array[1])*c.eval().array[1])] for c in np_circuits]))"
+        },
+        {
+          "cell": 35,
+          "lines": [
+            4
+          ],
+          "quote": "gr = gradient(params_1)"
+        }
+      ],
+      "trace_anchors": [
+        {
+          "lines": [
+            6,
+            15,
+            26,
+            66,
+            69,
+            75,
+            77,
+            78
+          ],
+          "quote": "gradient(params_1); c.eval().array; Circuit.eval; Rx.array(self); half_theta = Tensor.np.array(self.modules.pi * self.phase); TracerArrayConversionError; float32[]"
+        }
+      ],
+      "limits": [
+        "The package's backend-selection source is not staged; the exact host conversion is directly shown in the archived trace. No phase value or full package repair is inferred."
+      ]
+    }
+  },
+  {
+    "case": "NB-041",
+    "group": "owner:runiteking1",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "a @ aj.T in compute_batch_jacobian_gram",
+      "operand_or_axis": "Input activation width 1 versus hidden-layer activation width 64.",
+      "explanation": "The routine loops over every layer pair. acts[0] is scalar input while later activations have width 64, so the first cross-layer activation product contracts 1 with 64. It fails before d@dj.T or the reference J@J.T subtraction.",
+      "anchors": [
+        "cell 2 L8-10: input activations",
+        "cell 6 L2-5: hidden widths and scalar input",
+        "cell 4 L138-146: all layer pairs and product",
+        "cell 8 L1; saved line 146",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/runiteking1/precond-gd/blob/ccab69f56063a438693def7677fa85fd72c8bb7c/experiments/ras_layers/Untitled3.ipynb",
+          "git_blob": "7156c2bc1c5ea3cb1c84512575916fe6275106fd",
+          "notebook_sha256": "f0a204299961bc9c36f945170eb339ffad0c1766372afbece7b2fb1cbe08f6c9",
+          "target_cell_zero_based": 8,
+          "target_source_sha256": "97e73ad71c807f3a9682d8255cd8b7456a7d05d84adf93132c3e65fd00a85b7b",
+          "saved_trace_sha256": [
+            "42a0cc6334d2503ca2794b5c1961169a8f972932e426ca4daa00753f92931f61"
+          ]
+        }
+      ],
+      "limits": [
+        "Do not blame the separate reference Gram computation. No gradient values are required."
+      ]
+    }
+  },
+  {
+    "case": "NB-039",
+    "group": "owner:probml",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "sklearn check_array np.asarray(array,...) via classifier.predict_proba(X)",
+      "operand_or_axis": "X is a float32[500,2] BatchTracer generated under vmap.",
+      "explanation": "eval_multi_target vmaps target correlations. Generated X reaches target_predict_unadapted, the scikit-learn pipeline and StandardScaler validation. NumPy asarray cannot materialize the mapped tracer. The outer jnp.array around predict_proba has not yet converted the returned result.",
+      "anchors": [
+        "cell 15 L11-16: predictor and evaluation",
+        "saved tta_gauss.py lines 195,178-180,150,114: mapped data path",
+        "saved StandardScaler line 975; check_array line 856: np.asarray",
+        "saved sample_data_nurd line 72: tracer origin",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/probml/shifty/blob/88c859af4c01179ffcd1380b59f4037dd72c5430/shifty/label_shift_sklearn/nurd.ipynb",
+          "git_blob": "a6b27ea7f6910b3d43bb7e38cabc029259c6430b",
+          "notebook_sha256": "f7adfe66b3ad4448535d6295480c2c03b44b819e7c46e530a265668a6df11c5b",
+          "target_cell_zero_based": 15,
+          "target_source_sha256": "02028e3087831b65c85564d497bc60f3be524c323d683751c51ee11ec84f4352",
+          "saved_trace_sha256": [
+            "7c1adafc07c46627c6b0c8f4f8d046b5a7710debf6c1bd7352128025809379dd"
+          ]
+        }
+      ],
+      "limits": [
+        "Imported helpers are historical stack evidence. Do not blame source fitting or the outer jnp.array."
+      ]
+    }
+  },
+  {
+    "case": "NB-043",
+    "group": "owner:shawonashraf",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "affine return x@w.T+b on batched xs,ws,bs",
+      "operand_or_axis": "xs shape (10,10), ws shape (10,2,10), bs shape (10,2). Full-axis .T reverses all ws axes to (10,2,10); matmul contracts xs final extent 10 with the penultimate rhs extent 2.",
+      "conclusion": "A single-example affine function is called directly on per-example batches. The batched weight transpose does not preserve the intended per-example matrix contraction, causing 10 versus 2. Mapping affine jointly over example axes preserves the intended per-example relation; merely swapping the last two axes is not by itself a demonstrated shape-correct per-example solution for these rank-2 xs.",
+      "limit": "Intentional teaching example, with an inline shape-mismatch hint. Preserve it as previously inspected development/tutorial evidence; do not count it as untouched. No new execution occurred.",
+      "citations": [
+        "source lines 1-2",
+        "earlier cell 3 lines 1-3",
+        "earlier cell 4 lines 5-12",
+        "earlier cell 7 lines 1-5",
+        "errors[0].traceback lines 8-11 and 46"
+      ]
+    }
+  },
+  {
+    "case": "NB-045",
+    "group": "owner:shivampcosmo",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "NumPy np.cos(theta) in s2fft hp_ang2pix",
+      "operand_or_axis": "theta is a scalar float64 BatchTracer from theta_array.",
+      "explanation": "ang2pix vmaps hp_ang2pix over theta and phi with nside unmapped. The mapped helper calls NumPy cos on theta, which requests host conversion of that traced scalar before the pixel-index calculation.",
+      "anchors": [
+        "cell 1 L1-3: vmap binding",
+        "cell 2 L1-3: arrays and call",
+        "saved s2_samples.py line 541: z=np.cos(theta)",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/shivampcosmo/GODMAX/blob/8160594193429a129cbb957f5c717216b8a662e2/notebooks/mock_gen/test_s2fft.ipynb",
+          "git_blob": "68077306757155fc93d35b04f0260230741aed86",
+          "notebook_sha256": "791df8d424a671bbebec3966582eaeed90b5a92d48c89eea6c1e126f64428101",
+          "target_cell_zero_based": 2,
+          "target_source_sha256": "8b851be4d28ea56badcb4c2c0834d33a52b5ced51ca1e6f5acdece23177d0f43",
+          "saved_trace_sha256": [
+            "de7904682751dd77cb61a65da1b0e650f723425f96c8373faddb0d0ea80543c5"
+          ]
+        }
+      ],
+      "limits": [
+        "The operand is theta, not phi or nside. Current-version s2fft behavior was not tested."
+      ]
+    }
+  },
+  {
+    "case": "NB-047",
+    "group": "owner:shujakhalid",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "jnp.dot(encoder_inputs,params[\"embed_weights\"])",
+      "operand_or_axis": "Token vector contraction length 32 versus embedding matrix first axis 256.",
+      "explanation": "Preprocessing creates one-dimensional integer token IDs. Training slices 32 tokens and directly dots them with (256,256) weights. Dot treats token count as a contraction dimension rather than indices and fails at 32 versus 256.",
+      "anchors": [
+        "cell 0 L8-12,L28: vocab, batch and tokens",
+        "cell 0 L98,L143: dot and weights",
+        "cell 0 L152-157: slices and call",
+        "saved transformer_model line 98",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/ShujaKhalid/nlp-jax/blob/a19afd9c903ba21553ac789aba33e4ccf2e16e81/jax-textgen.ipynb",
+          "git_blob": "a3d7533736766b3a811c32bc24c9aacbed40068f",
+          "notebook_sha256": "e93d3814e1c00204ae744220b6e3dae463b65427bc018456ce761b74b14c8bc5",
+          "target_cell_zero_based": 0,
+          "target_source_sha256": "8054fd3d3e632806399e5dc4bcc2adff55f2ed405b272fa6f0286b26c47dabca",
+          "saved_trace_sha256": [
+            "f7fe8ae88e503e130b540576ff275b78a0a1630ad5e30f82e2ebfb1876d4ecaf"
+          ]
+        }
+      ],
+      "limits": [
+        "This precedes positional encoding and attention. Later defects are outside scope."
+      ]
+    }
+  },
+  {
+    "case": "NB-061",
+    "group": "owner:yannickhradetzky",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "NumPy np.cos(x) in grad(f)",
+      "operand_or_axis": "x is a scalar float32 tracer introduced by differentiation.",
+      "explanation": "f uses ordinary NumPy cos. grad traces f at 0.0, and NumPy requests the scalar tracer through __array__, which raises.",
+      "anchors": [
+        "cell 3 L1-4: NumPy and f",
+        "cell 4 L1-3: grad call",
+        "saved f line 4",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/YannickHradetzky/BATIP/blob/841e4d7c33735947b14572bd81c49f4a8cba116e/nb_lecture_02/lec2_intro_to_jax.ipynb",
+          "git_blob": "f76bcc373723cfa3d30790904873e156e628175a",
+          "notebook_sha256": "bf5b75bf2479f4f003fbbee87f32947dff37935005a6a680c6987757658d03d2",
+          "target_cell_zero_based": 4,
+          "target_source_sha256": "505850c90f691781b85aacb92b5d86d7b8a4c0122c049479264ab846f1f24211",
+          "saved_trace_sha256": [
+            "1219b4e3adb9923347a3b780ca1e77cd9756cd1c6ef1641e99e8bf5201c081a9"
+          ]
+        }
+      ],
+      "limits": [
+        "This is grad, not an asserted JIT-specific failure."
+      ]
+    }
+  },
+  {
+    "case": "NB-048",
+    "group": "owner:sil-pixel",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "predict_MIMO._predict first jnp.dot(w,activations)",
+      "operand_or_axis": "M=4,D=2. vmap over example axis supplies (4,2), reshaped to an 8-entry feature vector; layer_sizes starts at 2, so first w is (150,2). Contracted extents 2 and 8 differ.",
+      "conclusion": "The MIMO predictor concatenates features for four input copies but uses first-layer weights initialized for only one two-feature input. The final output size also remains 3 rather than the intended four heads of three classes; that is a later architecture constraint, not the operation reached by this traceback.",
+      "limit": "The notebook contains teaching TODOs about first/last layer sizes. Remove answer-bearing teaching instructions from future model packets under the sealed packet policy. NB-048 and NB-049 are one shared helper/parameter repair family, not independent diagnostic mechanisms.",
+      "citations": [
+        "source lines 1 and 7-11 and 20-28",
+        "earlier cell 6 lines 1-6",
+        "earlier cell 7 lines 3-10 and 17-31 and 64-74",
+        "errors[0].traceback lines 20-44 and 64"
+      ]
+    }
+  },
+  {
+    "case": "PR-002",
+    "group": "owner:edithatogo",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "LogisticModel.predict B.exp(-k*(t_arr-x0))",
+      "operand_or_axis": "A traced float32[50] expression depending on params_array reaches NumPy exp through logistic.py's retained B alias.",
+      "conclusion": "backend.py initially creates a NumPyBackend. logistic.py imports current_backend as B, binding that object. use_backend('jax') later rebinds backend.current_backend, leaving logistic.B pointing at the original NumPyBackend, whose exp is np.exp. The jitted loss computes with dynamic parameters, and this stale backend boundary triggers __array__ conversion.",
+      "limit": "Attribute the first observed conversion to B.exp at logistic.py:102. The fitter jnp.asarray calls are not the failing host conversion. The saved test establishes the call path; no fresh replay or complete-repair claim.",
+      "citations": [
+        "raw_bundle tests/test_batched_fitter.py lines 48-60",
+        "raw_bundle fitters/jax_fitter.py lines 12-27",
+        "raw_bundle diffuse/logistic.py lines 1-2 and 88-102 and 169-171",
+        "raw_bundle backend.py lines 11-23",
+        "raw_bundle backends/numpy_backend.py lines 1-9",
+        "trace lines 75-84"
+      ]
+    }
+  },
+  {
+    "case": "NB-049",
+    "group": "owner:sil-pixel",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "visualize_predictions -> evalMIMO -> predict_MIMO._predict first jnp.dot(w,activations)",
+      "operand_or_axis": "evalMIMO tiles two-coordinate inputs four times, then _predict flattens each (4,2) slice to length 8; params_mimo has a first-layer input extent 2. Trace reports 2 versus 8.",
+      "conclusion": "The same incompatible MIMO feature width is encountered through the visualization/evaluation path. The failure occurs before plotting and before later output-head issues. It is the same parameter/helper defect as NB-048.",
+      "limit": "Count as a second observed failing source with a shared repair family, not independent evidence. Stored state is archival and not replayed; the trace confirms that the incompatible parameter width was still present.",
+      "citations": [
+        "source line 1",
+        "earlier cell 8 lines 1-20",
+        "earlier cell 7 lines 17-31 and 36-53",
+        "earlier cell 10 lines 9-16",
+        "errors[0].traceback lines 6-32 and 52"
+      ]
+    }
+  },
+  {
+    "case": "PR-003",
+    "group": "owner:jobovy",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "AnySphericalPotential._backend_dens as_numpy(a), then backend/_namespaces.py numpy.asarray(x)",
+      "operand_or_axis": "The scalar radius a is a float64[] JAX tracer derived from traced R,z coordinates. The unit-aware density branch tries to materialize it as a NumPy array during shim tracing.",
+      "conclusion": "backend_input routes dens through a jitted shim; SphericalPotential._dens computes r in the selected backend and passes it through _rdens to _backend_dens. The is_backend_array(a) and _dens_needs_numpy branch calls as_numpy before invoking the raw density. as_numpy's numpy.asarray cannot consume the dynamic tracer, so the failure precedes the raw callback and any conversion of its result back to the backend.",
+      "limit": "The test is a pickle equality test, but the saved failure is the traced NumPy boundary, not evidence of corrupted pickle contents or a serialization defect. A stop-gradient operation would not by itself make this value concrete. Saved CPU reproduction only; no new execution.",
+      "citations": [
+        "raw_bundle tests/test_potential.py lines 1395-1408",
+        "raw_bundle backend/_input.py lines 177-204",
+        "raw_bundle backend/_jit.py lines 164-183 and 239-254",
+        "raw_bundle potential/SphericalPotential.py lines 97-101",
+        "raw_bundle potential/AnySphericalPotential.py lines 162-177 and 248-249",
+        "raw_bundle backend/_namespaces.py lines 253-259",
+        "trace lines 85-95"
+      ]
+    }
+  },
+  {
+    "case": "NB-051",
+    "group": "owner:sonvule59",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "jnp.dot(inputs,params) in loss_fn",
+      "operand_or_axis": "inputs axis 1 length 10 versus params axis 0 length 5.",
+      "explanation": "init_params uses (input_shape[0],1) with input_shape=(5,10), yielding (5,1). inputs is (5,10). The dot contracts 10 and 5 before target broadcasting or mean-square loss.",
+      "anchors": [
+        "cell 2 L6-9: parameter shape",
+        "cell 2 L13,L19-25: dot, inputs and call",
+        "saved loss_fn line 13",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/sonvule59/COMS-5990-HPC-Agent/blob/136edcca8f299df4bac3b2a5b62d2b50c5b53cca/torch_jax_accuracy/fix_progress/e5.ipynb",
+          "git_blob": "b238ee4cbf23ac61c770d95573bdf763b80c2291",
+          "notebook_sha256": "b6ac89903fb0dcb6725783c6949e2fe86e93cb59a64fbb89dceb691504227a73",
+          "target_cell_zero_based": 2,
+          "target_source_sha256": "ab9cf883e400fd267a32e91620193057c85f998a251456ef3be9b28705b53cf7",
+          "saved_trace_sha256": [
+            "00d453c6bb928d9e22f2882f1236e3b630e265c5a41bebfc0916f9b604734993"
+          ]
+        }
+      ],
+      "limits": [
+        "The notebook labels this code model-generated; do not treat it as independent natural-code evidence."
+      ]
+    }
+  },
+  {
+    "case": "NB-052",
+    "group": "owner:thibeauwouters",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "jnp.dot(VA[:,:n_coeff],cAproj) in calc_lc_flax",
+      "operand_or_axis": "Basis contraction width 10 versus cAproj contraction length 6.",
+      "explanation": "Sampler proposals reach the optical-lightcurve likelihood, which requests mag_ncoeff=10. Reconstruction dots the sliced basis with cAproj and fails because the contraction dimensions are 10 and 6.",
+      "anchors": [
+        "cell 10 L1: sampler call",
+        "saved likelihood.calc_lc lines 114-121: parameters and mag_ncoeff=10",
+        "saved nmma/em/utils.py line 527: reconstruction dot",
+        "saved exception (10,) and (6,)",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/ThibeauWouters/kim/blob/a17baf860b73b6acdc3d37f0f56c52cc8bd62525/example/AT2017gfo_no_inf/AT2017gfo.ipynb",
+          "git_blob": "fbdcf9ae6026d8521d99aa5f7dec511dc704def3",
+          "notebook_sha256": "7eeee1612cf3cb514cd5201f96705643b5553cdb79e093ae0694e58e25256937",
+          "target_cell_zero_based": 10,
+          "target_source_sha256": "2f0420fc50ec72ccf835d254fb04166c1e2700f1343f35807b4b29762cb30bbd",
+          "saved_trace_sha256": [
+            "d6a4f517bac4358ba35fbd361673770e68d03b962ef027de5c188f0891c65e0f"
+          ]
+        }
+      ],
+      "limits": [
+        "Serialized model assets are unavailable. Why cAproj has six coefficients is not established; do not blame empty sampler data."
+      ]
+    }
+  },
+  {
+    "case": "NB-056",
+    "group": "owner:tristancantatgaudin",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "jnp.dot(x,y) in custom_dot",
+      "operand_or_axis": "x axis 1 length 3 versus y axis 0 length 2.",
+      "explanation": "Both explicitly defined inputs are (2,3) matrices. Matrix dot contracts 3 against 2 and fails before squaring the result.",
+      "anchors": [
+        "cell 24 L1-11: inputs and call",
+        "saved custom_dot line 5: jnp.dot(x,y)**2",
+        "saved error (3,) and (2,)",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/TristanCantatGaudin/playground/blob/9f384e243cb1560cbf60f8d7694291ce35054134/vmap_and_grad.ipynb",
+          "git_blob": "875f0b4228d70c0e877df12f4a8a7a0a3d5976ce",
+          "notebook_sha256": "2f02ae0367c5b6f41a2719860f7ee9106ac09a1f6710a09ecb0363972a4eb7e4",
+          "target_cell_zero_based": 24,
+          "target_source_sha256": "6b87a03f1c060740fa89fa9f52bd2d1118330a7ee6dba5d0268c5db8d1327b4b",
+          "saved_trace_sha256": [
+            "889207b549d7866bfab3f849fe169bb037c5c9eda6257dedba6806c25889704e"
+          ]
+        }
+      ],
+      "limits": [
+        "Closely duplicates NB-003; group related examples."
+      ]
+    }
+  },
+  {
+    "case": "NB-058",
+    "group": "owner:tugdualkerjan",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "self.weight @ x in first Equinox Linear of MLP",
+      "operand_or_axis": "Weight feature width 200 versus input matrix row axis 100.",
+      "explanation": "n_embd=200 and the first layer maps 200 to 800. x=(100,200) is passed directly to the single-vector layer, contracting its weight feature width 200 with 100 rows.",
+      "anchors": [
+        "cell 4 L9: n_embd",
+        "cell 5 L10-19: first layer and direct loop",
+        "cell 7 L7-9: input and call",
+        "saved _linear.py line 95",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/TugdualKerjan/NNaDay/blob/6e4a3b78b28ebadc569bd174bf3d54765169abb9/GPT2_with_JAX/GPT2.ipynb",
+          "git_blob": "409366685f323e63e4349372eddde6fc517b9c15",
+          "notebook_sha256": "ec245ee47f946ceed447c6a09dcdf58cf1b6be1e0f6372d99a938534a3ad6047",
+          "target_cell_zero_based": 7,
+          "target_source_sha256": "03618dabb78acee207294bb2865da768426b76ce129879dbf523b49e9aa7530e",
+          "saved_trace_sha256": [
+            "f8c3f220db68b895a17797dd7ae418d0e1dfc42b1c346e735205fd90901f621a"
+          ]
+        }
+      ],
+      "limits": [
+        "The later MLPTheirs and average calls are not reached."
+      ]
+    }
+  },
+  {
+    "case": "NB-060",
+    "group": "owner:xiaotai-yang",
+    "family": "shape-dot (exploratory)",
+    "eligible": true,
+    "key": {
+      "operation": "a @ b[None]",
+      "operand_or_axis": "a vector length 15 versus batched matrix second-to-last axis 10.",
+      "explanation": "a=arange(15), b=(10,10). b[None] adds a batch axis to make (1,10,10) without changing its contraction width 10. Matmul therefore contracts 15 with 10.",
+      "anchors": [
+        "cell 10 L1-4: complete operands and product",
+        "saved exception (15,) and (10,)",
+        {
+          "kind": "immutable_provenance",
+          "url": "https://github.com/xiaotai-yang/NF_scalar/blob/66c5a51365335362a3b18e646cbf6446e8cd62c0/test.ipynb",
+          "git_blob": "b7ddd5a146632a03e4568785006017760ca9f1ed",
+          "notebook_sha256": "28365ba73631d0cece725e03c7a702b6b14aaf8a9b28180f2593f4a4f01570a4",
+          "target_cell_zero_based": 10,
+          "target_source_sha256": "06a8551aff72a936afeffe340db0a780ca6207e55958b234c79d7b6600dd5d53",
+          "saved_trace_sha256": [
+            "e6c87392c5898051a95fb68b52d3df83b15bca5e9fe865cdd89323dbec13f0ba"
+          ]
+        }
+      ],
+      "limits": [
+        "No patch or broadcasting remedy is required."
+      ]
+    }
+  },
+  {
+    "case": "FORUM-001",
+    "group": "stackoverflow:5951780",
+    "family": "dot",
+    "eligible": true,
+    "key": {
+      "operation": "jnp.dot(x, w) in Dense_7.forward, lowered to lax.dot_general, raises before the bias addition.",
+      "operand": "Dense input x is (64, 512). Its contracting dimension is 512, while w's recorded contracting dimension is 50; dot_general requires equal contracting dimensions.",
+      "explanation": "The application-created Dense_7 receives the encoder output through the first-token pooler x[:, 0, :] in the posted tl.Serial. The right dot operand is the Dense weight w.",
+      "limits": [
+        "The full shape of w and why its contracting dimension is 50 are not established.",
+        "Weight initialization/loading and the omitted encoder/training setup are not established.",
+        "This is archived evidence, not replay evidence."
+      ],
+      "citations": [
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "layer input shapes: ShapeDtype{shape:(64, 512), dtype:float32}"
+        },
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "return jnp.dot(x, w) + b"
+        },
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "TypeError: dot_general requires contracting dimensions to have the same shape, got [512] and [50]."
+        },
+        {
+          "section": "SOURCE CONTEXT",
+          "expression": "tl.Serial(encoder, tl.Fn('pooler', lambda x: (x[:, 0, :])), tl.Dense(7))"
+        }
+      ]
+    }
+  },
+  {
+    "case": "FORUM-002",
+    "group": "stackoverflow:6663733",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "np.power((params['w'] * x + params['b'])-y , 2) in f attempts NumPy ndarray conversion of its traced base operand and raises TracerArrayConversionError before the enclosing np.mean runs.",
+      "operand": "The first/base operand (params['w'] * x + params['b'])-y is the traced residual vector, observed in this replay as float32[100]. NumPy power invokes its __array__ conversion during tracing. The exponent 2 is a concrete literal and is not the traced operand.",
+      "explanation": "df = grad(f) differentiates the first argument, params, whose w and b leaves are initialized in cell 002. df(params, x, y) traces their arithmetic in f. The residual combines those parameter leaves with the length-100 NumPy arrays x and y created in cell 000; its dependence is on both w and b, with no basis to single out either leaf alone.",
+      "limits": [
+        "The captured runtime is Python 3.12.13, JAX/JAXLIB 0.10.2 and NumPy 2.5.1 on CPU. The original historical environment and byte-identical historical failure are not established.",
+        "The unseeded random noise, exact y values and numeric residual are not exposed or required.",
+        "The observed float32[100] describes this replay; do not require the same dtype for an unobserved historical environment.",
+        "JAX internal frames are filtered; the precise hidden NumPy coercion implementation is not shown.",
+        "The permitted native file is a summary. This audit verifies consistency with that summary and the exact flat, without independently opening the underlying capture, notebook or original source."
+      ],
+      "citations": [
+        {
+          "section": "RECORDED TRACEBACK",
+          "file": "/work/cell_001.py",
+          "line": 2,
+          "expression": "np.power((params['w'] * x + params['b'])-y , 2)",
+          "evidence": "The saved caret range selects exactly this call, not the enclosing np.mean."
+        },
+        {
+          "section": "RECORDED TRACEBACK",
+          "file": "/work/cell_002.py",
+          "line": 7,
+          "expression": "df(params, x, y)"
+        },
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "jax.errors.TracerArrayConversionError: The numpy.ndarray conversion method __array__() was called on traced array with shape float32[100]"
+        },
+        {
+          "section": "SOURCE CONTEXT",
+          "file": "/work/cell_000.py",
+          "line": 1,
+          "expression": "import numpy as np"
+        },
+        {
+          "section": "SOURCE CONTEXT",
+          "file": "/work/cell_000.py",
+          "line": 2,
+          "expression": "x = np.linspace(0,1,100)"
+        },
+        {
+          "section": "SOURCE CONTEXT",
+          "file": "/work/cell_000.py",
+          "line": 3,
+          "expression": "y = 2 * x + 3 + np.random.randn(100)"
+        },
+        {
+          "section": "SOURCE CONTEXT",
+          "file": "/work/cell_002.py",
+          "line": 2,
+          "expression": "df = grad(f)"
+        },
+        {
+          "section": "SOURCE CONTEXT",
+          "file": "/work/cell_002.py",
+          "line": 5,
+          "expression": "params['w'] = 2.4"
+        },
+        {
+          "section": "SOURCE CONTEXT",
+          "file": "/work/cell_002.py",
+          "line": 6,
+          "expression": "params['b'] = 10."
+        }
+      ]
+    }
+  },
+  {
+    "case": "FORUM-003",
+    "group": "stackoverflow:1097200",
+    "family": "scalar",
+    "eligible": true,
+    "key": {
+      "operation": "A Python float conversion at SciPy quad's improper-integration callback boundary raises ConcretizationTypeError while evaluating the integrand.",
+      "operand": "The scalar return c1/(1.0 + x**2) is a JAX JVP tracer, recorded with primal -0.5 and a traced tangent, rather than a concrete scalar acceptable to SciPy's callback conversion.",
+      "explanation": "grad_F = jax.grad(F) differentiates F's first argument c1. The lambda closes over that differentiated c1 and delivers its result through quad to the recorded _quadpack._qagie path.",
+      "limits": [
+        "The exact callback integration abscissa cannot be inferred from the primal -0.5.",
+        "The native callback's internal conversion instruction is not printed; require no instruction more specific than the exception's float conversion.",
+        "This is archived evidence, not replay evidence."
+      ],
+      "citations": [
+        {
+          "section": "SOURCE CONTEXT",
+          "expression": "grad_F = jax.grad(F)"
+        },
+        {
+          "section": "SOURCE CONTEXT",
+          "expression": "grad_F(c1, c2)"
+        },
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "val, err = quad(lambda x: c1/(1.0 + x**2), a=c2, b=jax.numpy.inf)"
+        },
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "return _quadpack._qagie(func,bound,infbounds,args,full_output,epsabs,epsrel,limit)"
+        },
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "The problem arose with the `float` function."
+        }
+      ]
+    }
+  },
+  {
+    "case": "FORUM-007",
+    "group": "forum.pyro.ai:1193",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "np.asarray(z) in numpyro_model requests the NumPy ndarray conversion protocol and raises TracerArrayConversionError.",
+      "operand": "z is a JVP-traced float32 vector of length 4 with a traced tangent; it cannot be materialized as a NumPy array during this transformed execution.",
+      "explanation": "The immediately preceding numpyro.sample creates z at site z from dist.Normal(jnp.zeros(z_dim), jnp.ones(z_dim)). The source runs numpyro_model through a NUTS kernel and MCMC with z_dim=4.",
+      "limits": [
+        "The full model and later PyTorch computation are omitted and are unnecessary to locate this conversion.",
+        "No failure in torch.from_numpy or a downstream model is established; np.asarray raises first.",
+        "This is archived evidence, not replay evidence."
+      ],
+      "citations": [
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "z = numpyro.sample(\"z\", dist.Normal(jnp.zeros(z_dim), jnp.ones(z_dim)))"
+        },
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "z_np = np.asarray(z)"
+        },
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "tangent = Traced<ShapedArray(float32[4])>"
+        },
+        {
+          "section": "SOURCE CONTEXT",
+          "expression": "import numpy as np"
+        },
+        {
+          "section": "SOURCE CONTEXT",
+          "expression": "kernel = NUTS(numpyro_model)"
+        },
+        {
+          "section": "SOURCE CONTEXT",
+          "expression": "mcmc.run(rng_key=random.PRNGKey(2), z_dim=4)"
+        }
+      ]
+    }
+  },
+  {
+    "case": "FORUM-010",
+    "group": "stackoverflow:22063439",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "XA = np.asarray(XA) inside scipy.spatial.distance.cdist raises TracerArrayConversionError, reached from cdist(x, x, metric='euclidean').",
+      "operand": "XA is the first x input, a JVP-traced float32 array of shape (3,3). NumPy coercion attempts its ndarray conversion while the argument is traced.",
+      "explanation": "x comes from jax.random.uniform(key, (size, size), dtype=jnp.float32) with size=3. error_diff = grad(error_func) traces the x argument when error_diff(x) calls error_func and then cdist.",
+      "limits": [
+        "The first-input conversion raises before any conversion of the identical second input or the later jnp.array(dists).",
+        "Dependency versions and a replay are not supplied.",
+        "Recorded file line numbers differ from local source numbering; equivalent expression citations are sufficient."
+      ],
+      "citations": [
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "print(error_diff(x))"
+        },
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "dists = scipy.spatial.distance.cdist(x, x, metric='euclidean')"
+        },
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "XA = np.asarray(XA)"
+        },
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "tangent = Traced<ShapedArray(float32[3,3])>"
+        },
+        {
+          "section": "SOURCE CONTEXT",
+          "expression": "x = random.uniform(key, (size, size), dtype=jnp.float32)"
+        },
+        {
+          "section": "SOURCE CONTEXT",
+          "expression": "error_diff = grad(error_func)"
+        }
+      ]
+    }
+  },
+  {
+    "case": "FORUM-011",
+    "group": "discourse.pymc.io:4248",
+    "family": "array",
+    "eligible": false,
+    "key": {
+      "operation": "NumPy array conversion in Cantera SpeciesThermo initialization, reached by ct.ConstantCp(...) at the recorded application line 552, raises TracerArrayConversionError.",
+      "operand": "A theta-dependent JAX tracer reaches the concrete Cantera constructor. The displayed coeffs list includes -params[2], which the author explicitly reports as a value of theta; do not demand an unshown internal conversion instruction or complete shape.",
+      "explanation": "jax.jit(func1) traces func1; its recorded frame calls func(theta), whose recorded frame constructs ct.ConstantCp with coeffs=[298.15, -params[2], 139600, 0.0]. The connection from this coefficient to theta is the author's reported relationship, not a shown assignment.",
+      "limits": [
+        "The full func implementation and theta-to-params assignment or transformation are absent.",
+        "The exact numeric coefficient, complete tracer shape and exact internal Cantera conversion statement are not established.",
+        "Preserve the rendered array() and float64. text; do not reconstruct missing underscores or shape brackets.",
+        "This is archived evidence, not replay evidence."
+      ],
+      "citations": [
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "sol = func(theta)"
+        },
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "spec.thermo = ct.ConstantCp(T_low=spec.thermo.min_temp, T_high=spec.thermo.max_temp,"
+        },
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "coeffs=[298.15, -params[2], 139600, 0.0])"
+        },
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "This concrete value was not available in Python because it depends on the value of the argument theta."
+        },
+        {
+          "section": "SOURCE CONTEXT",
+          "expression": "jitted_custom_op_jax = jax.jit(func1)"
+        },
+        {
+          "section": "SOURCE CONTEXT",
+          "expression": "-params[2] is a value of theta I passed to function."
+        }
+      ]
+    },
+    "baseline": "QUESTION\nIdentify the exact operation that raises, the immediate operand or constraint responsible, and its source or origin. Explain why the execution fails. Cite a line or expression. If the evidence does not determine a detail, say so. Do not propose a patch.\n\nRECORDED TRACEBACK\nExcerpt 1 (literal; intervening excerpts are separate):\nFile “C:\\Users\\86173\\Desktop\\jax_sofc.py”, line 651, in func1\n\nsol = func(theta)\n\n^^^^^^^^^^^\n\nFile “C:\\Users\\86173\\Desktop\\jax_sofc.py”, line 552, in func\n\nspec.thermo = ct.ConstantCp(T_low=spec.thermo.min_temp, T_high=spec.thermo.max_temp,\n\nP_ref=spec.thermo.reference_pressure,\n\ncoeffs=[298.15, -params[2], 139600, 0.0])\n\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\nFile “build\\python\\cantera\\speciesthermo.pyx”, line 42, in cantera.speciesthermo.SpeciesThermo.cinit\n\njax.errors.TracerArrayConversionError: The numpy.ndarray conversion method array() was called on traced array with shape float64.\n\nThe error occurred while tracing the function func1 at C:\\Users\\86173\\Desktop\\jax_sofc.py:650 for jit. This concrete value was not available in Python because it depends on the value of the argument theta.\n\nSOURCE CONTEXT\nSource: https://discourse.pymc.io/t/13489\nAuthor: liu_liu\nLicense: not recorded in the intake; attribution and minimal excerpts only\nEvidence: archived opening post; not replayed.\nMinimal literal excerpts from the opening post. The last source-context excerpt is the author's reported input relationship. Full context remains at the source link. The forum's rendered error text displays array() and float64.; no missing underscores or shape brackets have been reconstructed.\n\nExcerpt 1 (literal):\n  22  jitted_custom_op_jax = jax.jit(func1)\n\nExcerpt 2 (literal):\n  23  -params[2] is a value of theta I passed to function.\n"
+  },
+  {
+    "case": "FORUM-012",
+    "group": "stackoverflow:11628437",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "np.array(actions) in sbx/common/policies.py predict raises TracerArrayConversionError before the chained reshape.",
+      "operand": "actions is a traced float32 array with shape (1,17); NumPy array construction invokes its __array__ conversion during transformed execution.",
+      "explanation": "The application pmap traces lambda _: my_func(). my_func constructs SAC and calls model.learn; the recorded learn/collect_rollouts/_sample_action/predict chain reaches self.policy.predict and its conversion of actions. The actual action-producing statement is not shown.",
+      "limits": [
+        "The exact action-generation expression and numeric actions are absent.",
+        "The lambda ignores its mapped argument; the mapped arange value is not established as the converted operand.",
+        "No reshape failure or device-count cause is established; NumPy conversion raises first.",
+        "Package versions, physical-device execution and a replay are not established."
+      ],
+      "citations": [
+        {
+          "section": "SOURCE CONTEXT",
+          "expression": "out = pmap(lambda _: my_func())(jnp.arange(2))"
+        },
+        {
+          "section": "SOURCE CONTEXT",
+          "expression": "model = SAC(\"MlpPolicy\", env,verbose=0)"
+        },
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "model.learn(total_timesteps=7e5, progress_bar=True)"
+        },
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "return self.policy.predict(observation, state, episode_start, deterministic)"
+        },
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "actions = np.array(actions).reshape((-1, *self.action_space.shape))"
+        },
+        {
+          "section": "RECORDED TRACEBACK",
+          "expression": "jax.errors.TracerArrayConversionError: The numpy.ndarray conversion method __array__() was called on traced array with shape float32[1,17]."
+        }
+      ]
+    }
+  },
+  {
+    "case": "SO-70409729",
+    "group": "stackoverflow:8046133",
+    "family": "scalar",
+    "eligible": true,
+    "key": {
+      "operation": "Python float conversion requested by %.10f in the percent-format expression at objectFunction line 10, before exec can execute the generated statement.",
+      "operand": "The scalar traced valuesEndo[i], reported as float32[], cannot supply the concrete Python float required by formatting.",
+      "explanation": "valuesEndo is objectFunction's first argument differentiated by jacfwd(objectFunction) at line 37; SciPy root invokes that Jacobian through its Dfun check for sol2.",
+      "citations": "/work/cell_000.py:10, 37-41; recorded _check_func and jacfun frames; the exception explicitly names float.",
+      "limits": [
+        "The traceback does not record i or the concrete scalar value. Do not require a specific endogenous variable name or value."
+      ]
+    }
+  },
+  {
+    "case": "REG-004",
+    "group": "owner:sadatnfs",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "np.asarray(x) requests the traced operand's NumPy __array__ conversion and raises TracerArrayConversionError.",
+      "operand": "The JIT-traced argument x, reported as float64[2]; NumPy conversion requires concrete array data unavailable while tracing.",
+      "explanation": "x is the lambda argument traced by jax.jit when the call is supplied jnp.ones(2); np is ordinary NumPy imported at line 1.",
+      "citations": "/work/cell_000.py:1, 5, 7; traceback marker on np.asarray(x) and error naming argument x.",
+      "limits": []
+    }
+  },
+  {
+    "case": "SO-64950165",
+    "group": "stackoverflow:10898852",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "np.log(S / K) attempts NumPy __array__ conversion and raises TracerArrayConversionError.",
+      "operand": "The traced scalar result S / K supplied to np.log, reported as float32[]; ordinary NumPy cannot convert that tracer to concrete array data.",
+      "explanation": "grad(EuropeanCall.black_scholes_call_div, (0, 1, 3, 4)) traces the call with S=inputs[0] and K=inputs[1]. The later import numpy as np at line 4 rebinds the name previously assigned to jax.numpy at line 1.",
+      "citations": "/work/cell_000.py:1, 4, 27-29, 37, 47; traceback marker on np.log(S / K).",
+      "limits": []
+    }
+  },
+  {
+    "case": "REG-002",
+    "group": "owner:dbraun",
+    "family": "scalar",
+    "eligible": true,
+    "key": {
+      "operation": "int(self.edge_index.max()) in Data.num_nodes raises ConcretizationTypeError before adding 1 or calling jnp.zeros.",
+      "operand": "The scalar int32[] tracer returned by self.edge_index.max(); Python int requires a concrete value during JIT tracing.",
+      "explanation": "The dynamic d.edge_index field of the Data object passed to jax.jit(lambda d: jnp.zeros(d.num_nodes))(data); the shown Data initializer supplies only edge_index, so the property's edge-index branch is the recorded path.",
+      "citations": "/work/cell_000.py:98-103, 233, 235; error explicitly names int and argument d.edge_index.",
+      "limits": []
+    }
+  },
+  {
+    "case": "STREAM-005",
+    "group": "owner:ezraedelman",
+    "family": "dot",
+    "eligible": true,
+    "key": {
+      "operation": "lax.dot_general used by matmul for self.weight @ x in equinox.nn.Linear.__call__ raises TypeError.",
+      "operand": "The contracting dimensions have sizes 20 and 10. The model weight's input dimension and the batch dimension of the supplied two-dimensional X are incompatible at this multiplication.",
+      "explanation": "n=20 configures MLP(in_size=n). SparseParity.get_batch creates X with shape (batch_size, self.n), and dataset.get_batch(10, key) supplies a (10,20) array directly to model(X).",
+      "citations": "Recorded _linear.py:102 and lax_numpy.py:4038 frames and error (20,) versus (10,); /work/cell_001.py:3, 7-10; /work/cell_002.py:4, 7, 12; /work/cell_003.py:1-2.",
+      "limits": [
+        "The full runtime weight shape and layer ordinal are not printed and are not required by the key."
+      ]
+    }
+  },
+  {
+    "case": "STREAM-006",
+    "group": "owner:jan-david-fischbach",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "The npa.sin(A) path through autograd.tracer.f_wrapped/f_raw attempts NumPy __array__ conversion and raises TracerArrayConversionError.",
+      "operand": "A, the scalar float32[] JAX tracer supplied to the autograd.numpy sine call; concrete NumPy array conversion is unavailable for that tracer.",
+      "explanation": "npa is imported from autograd.numpy. grad_sin=jax.grad(sin), then grad_sin(0.0) traces sin's argument A.",
+      "citations": "/work/cell_001.py:1; /work/cell_002.py:1, 3; /work/cell_003.py:1-2; recorded autograd/tracer.py:48 and __array__ error.",
+      "limits": [
+        "The packet does not show the identity or implementation of f_raw; do not require a more specific inner raw function."
+      ]
+    }
+  },
+  {
+    "case": "STREAM-012",
+    "group": "owner:nicholas-miklaucic",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "JAX tracer __array__ conversion raises TracerArrayConversionError during the displayed rescaling expression energies * self.scale[cg.nodes.species] + self.shift[cg.nodes.species].",
+      "operand": "The traced cg.nodes.species indices, reported as int16[1024]; the expression requests a concrete NumPy representation that is unavailable while tracing.",
+      "explanation": "The error explicitly says the unavailable value depends on argument cg.nodes.species while tracing the JIT lambda at line 68. The graph cg is passed into the compiled model call.",
+      "citations": "Archived mace/mace.py:61 rescaling expression; recorded jax/_src/core.py:715 __array__ raise; error identifying int16[1024] and cg.nodes.species; lambda frame at line 68.",
+      "limits": [
+        "The multioperation source line and omitted frames do not identify which individual scale/shift indexed subexpression initiated conversion. Do not choose one from assumed evaluation behavior.",
+        "The classes and concrete contents of self.scale and self.shift, parameter storage class, and active checkpoint are unrecorded.",
+        "The selected traceback omits intervening frames and does not provide a finer conversion call site."
+      ]
+    }
+  },
+  {
+    "case": "WFOUR-001",
+    "group": "course:deeplearning-ai-nlp-specialization",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "The NumPy ndarray conversion triggered while evaluating np.equal(inputs, 0) in mask = mask.at[np.equal(inputs, 0)].set(0).",
+      "operand": "The inputs value used by np.equal: an int32[128,16] DynamicJaxprTracer.",
+      "explanation": "The comparison attempts to convert its traced input through __array__ while pure_fn is being traced for eval_shape. The recorded value depends on the argument x and is unavailable as a concrete Python/NumPy array. The failure occurs while constructing the index expression, before the indexed set can complete.",
+      "citations": [
+        "incidents/flat/INC-001.txt:16-23 (original prepare_attention_input line 28 and conversion error)",
+        "incidents/flat/INC-001.txt:8 (matching layer input signature)",
+        "incidents/flat/INC-001.txt:26-28 (trace-preserved source expression and attribution)"
+      ],
+      "limits": [
+        "The complete function and import block are absent; do not require the import statement behind np or a detailed binding from pure_fn's x to inputs.",
+        "The matching int32 layer-input signature does not establish the complete argument binding or data-producing code."
+      ]
+    }
+  },
+  {
+    "case": "WFOUR-002",
+    "group": "course:deeplearning-ai-nlp-specialization",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "The NumPy ndarray conversion triggered by np.multiply((1.0 - fastnp.eye(batch_size)), scores) in TripletLossFn line 22.",
+      "operand": "A float32[256,256] DynamicJaxprTracer supplied to that multiply expression; the flat does not uniquely identify it as the first argument versus scores.",
+      "explanation": "np.multiply requests a NumPy array representation of a traced value during single_device_update_fn's jit tracing. The trace records JAX operations on TripletLossFn line 22 as the origin of this tracer, and __array__ raises because a traced value cannot be converted to a concrete NumPy ndarray at that stage.",
+      "citations": [
+        "incidents/flat/INC-005.txt:16-23 (multiply expression, tracer dtype/shape and jit context)",
+        "incidents/flat/INC-005.txt:26-28 (recorded JAX-operation origin at line 22)",
+        "incidents/flat/INC-005.txt:31-33 (trace-preserved expression and attribution)"
+      ],
+      "limits": [
+        "Do not require a choice between (1.0 - fastnp.eye(batch_size)) and scores as the particular converted argument; both their complete definitions and the import bindings are absent.",
+        "Do not infer how scores was computed, what backend fastnp names, or which earlier operation created scores.",
+        "The recorded add provenance is not itself the operation that raised."
+      ]
+    }
+  },
+  {
+    "case": "WFOUR-003",
+    "group": "course:deeplearning-ai-nlp-specialization",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "np.tril(jnp.ones((mask_size, mask_size))) fails in NumPy tril's asanyarray/array conversion of its argument.",
+      "operand": "The float32[1250,1250] DynamicJaxprTracer produced by jnp.ones((mask_size, mask_size)) on dot_product_self_attention line 21.",
+      "explanation": "While pure_fn is traced for eval_shape, the jnp.ones result is a traced JAX value. NumPy tril converts that argument with asanyarray, which reaches the tracer's __array__ method and raises TracerArrayConversionError. The failure is the NumPy conversion of the ones result, rather than the creation of the ones array.",
+      "citations": [
+        "incidents/flat/INC-007.txt:16-29 (application call, NumPy conversion frames and tracer shape)",
+        "incidents/flat/INC-007.txt:31-35 (eval_shape context and recorded line-21 origin)",
+        "incidents/flat/INC-007.txt:38-40 (trace-preserved expression and attribution)"
+      ],
+      "limits": [
+        "The flat does not contain the complete function or the code assigning mask_size; do not require a detailed argument binding or a claim about mask_size's derivation."
+      ]
+    }
+  },
+  {
+    "case": "WFOUR-004",
+    "group": "owner:aphearin",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "NumPy np.exp(y) in dy_dt_numpy(y, t), within return -3*t*t*np.exp(y); NumPy's conversion invokes the JAX tracer's __array__, which raises TracerArrayConversionError.",
+      "operand": "The immediate converting operand is callback parameter y, a scalar JAX tracer reported as ShapedArray(float32[], weak_type=True). It is traced when jodeint(dy_dt_numpy, y0, t_domain) closure-converts the ODE callback. The shown initial-state input is y0 = -5.0.",
+      "explanation": "The imported np is ordinary NumPy. JAX odeint traces the supplied callback through closure_convert(func, y0, t[0], *args), making its y argument abstract. np.exp attempts to convert that traced y to a NumPy ndarray through __array__, but a concrete array value is unavailable during tracing, so the conversion raises. The error is in the callback's np.exp, rather than in the analytical helper, scipy odeint, or a later integration result.",
+      "citations": [
+        "Recorded <ipython-input-7> line 2 / notebook cell 8: jax_result = jodeint(dy_dt_numpy, y0, t_domain).",
+        "Recorded ode.py line 172: custom_derivatives.closure_convert(func, y0, t[0], *args).",
+        "Recorded <ipython-input-3> line 4 / notebook cell 3: return -3*t*t*np.exp(y); the same cell imports numpy as np.",
+        "Recorded core.py line 488 and final error: __array__ raises TracerArrayConversionError on scalar float32 weak-type tracer.",
+        "Notebook cell 6: y0 = -5.0; notebook cell 5: t_domain = np.linspace(t0, 15, 100), t0 = 0.0."
+      ],
+      "limits": [
+        "Do not require a concrete numerical value of y or t at the failing trace; the reported abstract scalar and its callback origin suffice.",
+        "The packet does not establish a completed numerical integration or its results.",
+        "Teaching stratum and same-author grouping must remain disclosed; these two programs are not two independent author groups.",
+        "No global upstream-source comparison is available within the allowed files; no upstream-copy attribution or manifest overlap is observed."
+      ]
+    }
+  },
+  {
+    "case": "WFOUR-005",
+    "group": "owner:aphearin",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "erf_scipy(x), imported from scipy.special.erf, in jax_func_whoops at the recorded function line 6: return erf_scipy(x) + x**2. The raising conversion is JAX Tracer.__array__.",
+      "operand": "x is the argument of the @jjit-decorated jax_func_whoops, supplied by jax_func_whoops(xarr). The error reports it as a float32[30] DynamicJaxprTrace tracer dependent on argument x. The shown xarr source uses a 30-point linspace; the selected assignment immediately before the shown call is xarr = np.linspace(0, 2*np.pi, nx), with nx = 30.",
+      "explanation": "jit traces jax_func_whoops, so x is an abstract JAX value even when the caller supplies an ordinary NumPy array. Calling SciPy's erf on that x attempts NumPy ndarray conversion through __array__. JAX rejects the attempt to obtain a concrete ndarray during tracing, producing TracerArrayConversionError before the addition and x**2 expression can complete.",
+      "citations": [
+        "Recorded Cell In [12] line 1 / notebook cell 19: jax_func_whoops(xarr).",
+        "Recorded Cell In [10] lines 4-6 / notebook cell 17: @jjit; def jax_func_whoops(x): return erf_scipy(x) + x**2.",
+        "Notebook cell 17: from scipy.special import erf as erf_scipy; notebook cell 11: from jax import jit as jjit.",
+        "Final recorded error: float32[30] DynamicJaxprTrace; tracing jax_func_whoops for jit; the unavailable concrete value depends on argument x.",
+        "Notebook cell 2: nx = 30; notebook cell 18: xarr = np.linspace(0, 2*np.pi, nx).",
+        "Recorded core.py line 540: Tracer.__array__ raises TracerArrayConversionError."
+      ],
+      "limits": [
+        "The selected source also contains an earlier jnp.linspace assignment to xarr. The full historical notebook execution ordering is not supplied; do not require certainty about the concrete caller array implementation or every element. The call argument xarr, traced parameter x and recorded float32[30] shape are established.",
+        "Do not infer the reason for the recorded float32 dtype from the NumPy source, since JAX configuration and full runtime state are not supplied.",
+        "The source does not expose SciPy's internal converting frame; identify the scipy.special.erf call and the observed __array__ conversion without inventing its implementation.",
+        "Teaching stratum and same-author grouping must remain disclosed.",
+        "No global upstream-source comparison is possible from these allowed files; no upstream-copy attribution or manifest overlap is observed."
+      ]
+    }
+  },
+  {
+    "case": "WFOUR-006",
+    "group": "owner:thibeauwouters",
+    "family": "scalar",
+    "eligible": true,
+    "key": {
+      "operation": "float(mass_1_source) in Mc_q_to_m1_m2_src at transforms.py line 108.",
+      "operand": "mass_1_source is an abstract scalar BatchTracer with shape float64[]. The diagnostic reports its creation at ripple/src/ripplegw/__init__.py:37:9 in Mc_eta_to_ms.",
+      "explanation": "The output-transform path invokes Mc_q_to_m1_m2_src through transform_func(sample_point) inside jax.lax.map. Python float requires a concrete scalar value, but mass_1_source is an abstract traced scalar in that mapped computation, so the conversion raises ConcretizationTypeError. The outer output-transform handler catches it, skips that transform and later completes the surrounding run.",
+      "citations": [
+        "pipe_utils.py line 535: jax.lax.map(apply_to_index_new_only, indices, batch_size=batch_size).",
+        "pipe_utils.py line 529: transformed_point = transform_func(sample_point).",
+        "transforms.py line 108: mass_1_source = float(mass_1_source).",
+        "Recorded ConcretizationTypeError: traced array with shape float64[]; the problem arose with the float function.",
+        "Recorded BatchTracer creation: ripple/src/ripplegw/__init__.py:37:9 (Mc_eta_to_ms).",
+        "13:03 warning: Skipping transform Mc_q_to_m1_m2_src; later Finished successfully!"
+      ],
+      "limits": [
+        "The concrete scalar value, full computation from Mc_eta_to_ms to mass_1_source, and external function bodies are not supplied; require only the reported creation location and preserved call chain.",
+        "A scalar shape does not satisfy float's requirement for a concrete scalar value.",
+        "This is a caught output-transform incident, not evidence that the whole run terminated unsuccessfully.",
+        "This float conversion differs from W4-HPC-001's tuple shape query and NumPy __array__ conversion.",
+        "The JAX error's conversion advice is genuine diagnostic text, not an authored answer; the key does not require proposing a patch."
+      ]
+    }
+  },
+  {
+    "case": "WFOUR-007",
+    "group": "owner:mohammedelfatihsalah",
+    "family": "dot",
+    "eligible": false,
+    "key": {
+      "operation": "jnp.matmul(jnp.expand_dims(prev_hint.i, axis=1), h_t) in _one_step_pred, lowering to the dot_general shape check that raises.",
+      "operand": "The contracting dimension of the expanded prev_hint.i left operand has size 1, while the corresponding contracting dimension of the h_t right operand has size 80.",
+      "explanation": "The recorded frame computes gr_emb_i from prev_hint.i expanded at axis 1 and h_t. dot_general requires equal contracting dimensions, and the trace reports [1] versus [80]. These dimensions cannot be contracted by the attempted matmul.",
+      "citations": [
+        "published/flat/W4-PUB-004.txt:97-98 (trace-preserved application expression at recorded line 807)",
+        "published/flat/W4-PUB-004.txt:115-127 (matmul-to-dot_general path and unequal contracting dimensions)",
+        "published/flat/W4-PUB-004.txt:130-144 (same expression in both displayed pooling branches)"
+      ],
+      "limits": [
+        "Do not require mean_i_j versus max_i_j: both displayed branches contain the same failing expression, and the drifted source line labels do not disambiguate them.",
+        "The complete operand shapes, ranks and numeric axis indices are absent; require only the left/right contracting sizes and named operand expressions.",
+        "The trace-preserved expression supports the operation despite line drift; do not claim full source-snapshot identity or a reason why the dimensions became 1 and 80.",
+        "Do not blame the subsequent j pooling, averaging, maximum or squeeze operations."
+      ]
+    },
+    "baseline": "Identify the exact operation that raises, the immediate operand or constraint responsible, and its source or origin. Explain why the execution fails. Cite a line or expression. If the evidence does not determine a detail, say so. Do not propose a patch.\n\nRECORDED TRACEBACK\nTraceback (most recent call last):\n  File \"/content/drive/MyDrive/Final Project/new_clrs/clrs/examples/run.py\", line 301, in <module>\n    app.run(main)\n  File \"/usr/local/lib/python3.7/dist-packages/absl/app.py\", line 312, in run\n    _run_main(main, args)\n  File \"/usr/local/lib/python3.7/dist-packages/absl/app.py\", line 258, in _run_main\n    sys.exit(main(argv))\n  File \"/content/drive/MyDrive/Final Project/new_clrs/clrs/examples/run.py\", line 285, in main\n    test_model_custom(model)\n  File \"/content/drive/MyDrive/Final Project/new_clrs/clrs/examples/run.py\", line 260, in test_model_custom\n    step, model, test_feedback, verbose=FLAGS.verbose_logging, test=True)\n  File \"/content/drive/MyDrive/Final Project/new_clrs/clrs/examples/run.py\", line 158, in evaluate\n    predictions, aux = model.predict2(feedback.features)\n  File \"/content/drive/MyDrive/Final Project/new_clrs/clrs/_src/baselines_2.py\", line 975, in predict2\n    self.params, features, True, False)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/_src/traceback_util.py\", line 162, in reraise_with_filtered_traceback\n    return fun(*args, **kwargs)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/_src/api.py\", line 419, in cache_miss\n    donated_invars=donated_invars, inline=inline)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/core.py\", line 1632, in bind\n    return call_bind(self, fun, *args, **params)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/core.py\", line 1623, in call_bind\n    outs = primitive.process(top_trace, fun, tracers, params)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/core.py\", line 1635, in process\n    return trace.process_call(self, fun, tracers, params)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/core.py\", line 627, in process_call\n    return primitive.impl(f, *tracers, **params)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/interpreters/xla.py\", line 688, in _xla_call_impl\n    *unsafe_map(arg_spec, args))\n  File \"/usr/local/lib/python3.7/dist-packages/jax/linear_util.py\", line 263, in memoized_fun\n    ans = call(fun, *args)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/interpreters/xla.py\", line 760, in _xla_callable_uncached\n    *arg_specs).compile().unsafe_call\n  File \"/usr/local/lib/python3.7/dist-packages/jax/interpreters/xla.py\", line 772, in lower_xla_callable\n    fun, abstract_args, pe.debug_info_final(fun, \"jit\"))\n  File \"/usr/local/lib/python3.7/dist-packages/jax/interpreters/partial_eval.py\", line 1542, in trace_to_jaxpr_final\n    jaxpr, out_avals, consts = trace_to_subjaxpr_dynamic(fun, main, in_avals)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/interpreters/partial_eval.py\", line 1520, in trace_to_subjaxpr_dynamic\n    ans = fun.call_wrapped(*in_tracers)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/linear_util.py\", line 166, in call_wrapped\n    ans = self.f(*args, **dict(self.params, **kwargs))\n  File \"/usr/local/lib/python3.7/dist-packages/haiku/_src/transform.py\", line 216, in apply_fn\n    return f.apply(params, None, *args, **kwargs)\n  File \"/usr/local/lib/python3.7/dist-packages/haiku/_src/transform.py\", line 127, in apply_fn\n    out, state = f.apply(params, {}, *args, **kwargs)\n  File \"/usr/local/lib/python3.7/dist-packages/haiku/_src/transform.py\", line 383, in apply_fn\n    out = f(*args, **kwargs)\n  File \"/content/drive/MyDrive/Final Project/new_clrs/clrs/_src/baselines_2.py\", line 949, in _use_net\n    kind, inf_bias, inf_bias_edge, self.nb_dims, pooling=self.pooling)(*args, **kwargs)\n  File \"/usr/local/lib/python3.7/dist-packages/haiku/_src/module.py\", line 428, in wrapped\n    out = f(*args, **kwargs)\n  File \"/usr/local/lib/python3.7/dist-packages/haiku/_src/module.py\", line 279, in run_interceptors\n    return bound_method(*args, **kwargs)\n  File \"/content/drive/MyDrive/Final Project/new_clrs/clrs/_src/baselines_2.py\", line 374, in __call__\n    length=nb_mp_steps - 1)\n  File \"/usr/local/lib/python3.7/dist-packages/haiku/_src/stateful.py\", line 509, in scan\n    stateful_fun, init, xs, length, reverse, unroll=unroll)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/_src/traceback_util.py\", line 162, in reraise_with_filtered_traceback\n    return fun(*args, **kwargs)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/_src/lax/control_flow.py\", line 1345, in scan\n    init_flat, carry_avals, carry_avals_out, init_tree, *rest = _create_jaxpr(init)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/_src/lax/control_flow.py\", line 1332, in _create_jaxpr\n    f, in_tree, carry_avals + x_avals, \"scan\")\n  File \"/usr/local/lib/python3.7/dist-packages/jax/_src/util.py\", line 187, in wrapper\n    return cached(config._trace_context(), *args, **kwargs)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/_src/util.py\", line 180, in cached\n    return f(*args, **kwargs)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/_src/lax/control_flow.py\", line 78, in _initial_style_jaxpr\n    fun, in_tree, in_avals, primitive_name)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/_src/util.py\", line 187, in wrapper\n    return cached(config._trace_context(), *args, **kwargs)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/_src/util.py\", line 180, in cached\n    return f(*args, **kwargs)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/_src/lax/control_flow.py\", line 71, in _initial_style_open_jaxpr\n    jaxpr, _, consts = pe.trace_to_jaxpr_dynamic(wrapped_fun, in_avals, debug)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/interpreters/partial_eval.py\", line 1510, in trace_to_jaxpr_dynamic\n    jaxpr, out_avals, consts = trace_to_subjaxpr_dynamic(fun, main, in_avals)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/interpreters/partial_eval.py\", line 1520, in trace_to_subjaxpr_dynamic\n    ans = fun.call_wrapped(*in_tracers)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/linear_util.py\", line 166, in call_wrapped\n    ans = self.f(*args, **dict(self.params, **kwargs))\n  File \"/usr/local/lib/python3.7/dist-packages/haiku/_src/stateful.py\", line 491, in stateful_fun\n    carry, out = f(carry, x)\n  File \"/usr/local/lib/python3.7/dist-packages/haiku/_src/module.py\", line 428, in wrapped\n    out = f(*args, **kwargs)\n  File \"/usr/local/lib/python3.7/dist-packages/haiku/_src/module.py\", line 279, in run_interceptors\n    return bound_method(*args, **kwargs)\n  File \"/content/drive/MyDrive/Final Project/new_clrs/clrs/_src/baselines_2.py\", line 266, in _msg_passing_step\n    inputs, cur_hint, mp_state.hiddens, nb_nodes, pooling=pooling, prev_hint=prev_hint_)\n  File \"/usr/local/lib/python3.7/dist-packages/haiku/_src/module.py\", line 428, in wrapped\n    out = f(*args, **kwargs)\n  File \"/usr/local/lib/python3.7/dist-packages/haiku/_src/module.py\", line 279, in run_interceptors\n    return bound_method(*args, **kwargs)\n  File \"/content/drive/MyDrive/Final Project/new_clrs/clrs/_src/baselines_2.py\", line 807, in _one_step_pred\n    gr_emb_i = jnp.matmul(jnp.expand_dims(prev_hint.i,axis=1), h_t)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/_src/traceback_util.py\", line 162, in reraise_with_filtered_traceback\n    return fun(*args, **kwargs)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/_src/api.py\", line 419, in cache_miss\n    donated_invars=donated_invars, inline=inline)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/core.py\", line 1632, in bind\n    return call_bind(self, fun, *args, **params)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/core.py\", line 1623, in call_bind\n    outs = primitive.process(top_trace, fun, tracers, params)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/core.py\", line 1635, in process\n    return trace.process_call(self, fun, tracers, params)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/interpreters/partial_eval.py\", line 1330, in process_call\n    jaxpr, out_avals, consts = trace_to_subjaxpr_dynamic(f, self.main, in_avals)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/interpreters/partial_eval.py\", line 1520, in trace_to_subjaxpr_dynamic\n    ans = fun.call_wrapped(*in_tracers)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/linear_util.py\", line 166, in call_wrapped\n    ans = self.f(*args, **dict(self.params, **kwargs))\n  File \"/usr/local/lib/python3.7/dist-packages/jax/_src/numpy/lax_numpy.py\", line 4861, in matmul\n    precision=precision)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/_src/lax/lax.py\", line 733, in dot_general\n    preferred_element_type=preferred_element_type)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/core.py\", line 272, in bind\n    out = top_trace.process_primitive(self, tracers, params)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/interpreters/partial_eval.py\", line 1317, in process_primitive\n    out_avals = primitive.abstract_eval(*avals, **params)\n  File \"/usr/local/lib/python3.7/dist-packages/jax/_src/lax/lax.py\", line 2274, in standard_abstract_eval\n    return ShapedArray(shape_rule(*avals, **kwargs), dtype_rule(*avals, **kwargs),\n  File \"/usr/local/lib/python3.7/dist-packages/jax/_src/lax/lax.py\", line 3576, in _dot_general_shape_rule\n    raise TypeError(msg.format(lhs_contracting_shape, rhs_contracting_shape))\njax._src.traceback_util.UnfilteredStackTrace: TypeError: dot_general requires contracting dimensions to have the same shape, got [1] and [80].\n\nSOURCE CONTEXT\nclrs/_src/baselines_2.py lines 824-837\n          elif pooling == 'mean_i_j':\n            print(\"inside mean_i_j line: [728] baseline_2.py\")\n            gr_emb_i = jnp.matmul(jnp.expand_dims(prev_hint.i,axis=1), h_t)\n            gr_emb_j = jnp.matmul(jnp.expand_dims(prev_hint.j,axis=1), h_t)\n            gr_emb = (gr_emb_i + gr_emb_j)/2\n            gr_emb = gr_emb.squeeze(axis=1)\n          elif pooling == 'max_i_j':\n            #print(\"inside max_i_j line: [734] baseline_2.py\")\n            #print(\"prev_hint shape >> \", prev_hint.i.shape)\n            #print(\"hint i shape >> \", prev_hint.i.shape)\n            gr_emb_i = jnp.matmul(jnp.expand_dims(prev_hint.i,axis=1), h_t)\n            gr_emb_j = jnp.matmul(jnp.expand_dims(prev_hint.j,axis=1), h_t)\n            gr_emb =  jnp.maximum(gr_emb_i, gr_emb_j)\n            gr_emb = jnp.squeeze(gr_emb, axis=1)\n\nAttribution: https://github.com/mohammedElfatihSalah/spe2/blob/decef3fef72ab874489d2cf223e58ff8439ee750/wandb/run-20220203_224304-2ymumpm9/files/output.log\nOwner group: owner:mohammedelfatihsalah\nSource stratum: incident\n"
+  },
+  {
+    "case": "WFOUR-008",
+    "group": "owner:probml",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "NumPy ndarray conversion during p_factor_given_class[0, :] = [1 - rho, rho] in make_prior, not the later jnp.einsum.",
+      "operand": "A scalar float32 BatchTracer on the assignment's right-hand side, derived from rho. rho is corr_target supplied by vmap over corr_targets = jnp.array([0.2, 0.5]).",
+      "explanation": "eval_multi_target maps f over corr_targets; f passes its traced corr_target through eval_single_target to make_prior. The preserved make_prior frame creates p_factor_given_class with np.zeros and then assigns a list containing 1 - rho and rho into a row. That assignment requires NumPy conversion of a traced scalar and reaches Tracer.__array__, which raises. The failing tracer's recorded batched values [0.8, 0.5] are consistent with 1 - rho for the supplied targets.",
+      "citations": [
+        "notebooks/flat/W4-NB-001.txt:9-27 (invocation, vmap and corr_target-to-make_prior chain)",
+        "notebooks/flat/W4-NB-001.txt:31-45 (trace-preserved make_prior expressions and scalar BatchTracer)",
+        "notebooks/flat/W4-NB-001.txt:80-91 (application invocation and supplied target values)"
+      ],
+      "limits": [
+        "The complete external make_prior function and its import block are absent; its relevant source is preserved in the traceback.",
+        "The trace's created-on line 84 does not align with the displayed assignment frame at line 85. Do not require an exact original creation-line number or infer an unseen line from that discrepancy.",
+        "Do not require a unique choice of right-hand-side list component beyond the traced rho-derived scalar; identifying the assignment, traced origin and conversion constraint is sufficient.",
+        "Different failing programs within one notebook do not supply independent owner/source groups."
+      ]
+    }
+  },
+  {
+    "case": "WFOUR-009",
+    "group": "owner:probml",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "Indexing the NumPy array args with args[i, :] inside parallel_map's ffmulti, in return ff(*args[i, :]).",
+      "operand": "The scalar int32 DynamicJaxprTracer i, the mapped argument to ffmulti under jax.pmap; it is used as an index into the host NumPy args table.",
+      "explanation": "make_arg_combo returns np.array(combo), and the invocation passes that args array into parallel_map. parallel_map applies jax.pmap to ffmulti over ids. During pmap tracing i is unavailable as a concrete Python/NumPy index, so args[i, :] tries to convert i through __array__ and raises before ff can be called with the selected row.",
+      "citations": [
+        "notebooks/flat/W4-NB-002.txt:14-32 (pmap, ffmulti indexing frame and traced i)",
+        "notebooks/flat/W4-NB-002.txt:62-65 (make_arg_combo returns np.array)",
+        "notebooks/flat/W4-NB-002.txt:101-114 (parallel_map's index and pmap path)",
+        "notebooks/flat/W4-NB-002.txt:128-137 (args construction and call)"
+      ],
+      "limits": [
+        "The traceback and displayed cell source have a one-line offset, but preserve the same failing expression; do not require their numeric line labels to agree.",
+        "Do not blame the eigendecomposition, f's static N argument, or the serial-map path; the recorded failure occurs when selecting args[i, :].",
+        "Different failing programs within one notebook do not supply independent owner/source groups."
+      ]
+    }
+  },
+  {
+    "case": "WFOUR-010",
+    "group": "owner:seanxuseanxu",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "jnp.shape(grad) in get_update at inference.py line 137; the raising step is NumPy's asarray(a) fallback in numpy.core.fromnumeric.shape at line 2024.",
+      "operand": "grad is the tuple supplied to the highlighted jnp.shape call; NumPy conversion encounters a traced array with shape float32[230]. The traced value is produced while get_update is traced for pmap and depends on qz_params and seed.",
+      "explanation": "The shape helper first tries a.shape on the tuple, which has no shape attribute. Its fallback calls asarray(a), requiring NumPy to convert a traced JAX array through __array__. That concrete NumPy conversion is unavailable during pmap tracing, causing TracerArrayConversionError. The earlier AttributeError is the handled precursor, not the final exception.",
+      "citations": [
+        "L79-L81: get_update, inference.py line 137, print(jnp.shape(val), jnp.shape(grad)); the caret selects jnp.shape(grad).",
+        "L65-L68: result = a.shape; AttributeError: 'tuple' object has no attribute 'shape'.",
+        "L82-L85: numpy.core.fromnumeric.shape line 2024, result = asarray(a).shape; __array__ called on traced array with shape float32[230].",
+        "L86: get_update is traced for pmap; the unavailable value depends on qz_params and seed.",
+        "L76-L77: SVI calls get_update(replicated_params, seeds)."
+      ],
+      "limits": [
+        "The complete recorded body of get_update is unavailable, and the indexed application source differs; infer no unstated gradient construction, tuple arity, inner member index, or concrete argument values.",
+        "The operand origin is bounded to grad in the preserved application frame and the diagnostic's reported qz_params/seed dependence; no fuller dataflow is required.",
+        "This is a tuple shape-query conversion, distinct from W4-MORE-001's explicitly recorded float conversion of a scalar BatchTracer.",
+        "No authored diagnostic answer is present; the quoted exception details are genuine diagnostic text."
+      ]
+    }
+  },
+  {
+    "case": "WFOUR-011",
+    "group": "owner:shivampcosmo",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "np.array(mock_map_test.y_sim) while evaluating the argument to hp.mollview.",
+      "operand": "mock_map_test.y_sim, recorded as a float64[786432] DynamicJaxprTracer.",
+      "explanation": "The explicit np.array conversion invokes the traced array's __array__ method and raises TracerArrayConversionError before hp.mollview receives an argument. The object is constructed with get_mock_map; the error identifies the tracer's creation site as get_mock_map.get_Pe_healpix in get_sim_on_halos_jit.py at 236:21.",
+      "citations": [
+        "notebooks/flat/W4-NB-003.txt:6-15 (failing conversion, tracer shape and recorded creation site)",
+        "notebooks/flat/W4-NB-003.txt:18-24 (NumPy binding and object construction)",
+        "notebooks/flat/W4-NB-003.txt:28-29 (matching application invocation)"
+      ],
+      "limits": [
+        "The expression at the recorded upstream creation site and the code assigning y_sim are absent. Do not require an explanation of how the tracer escaped or which producer operation created it.",
+        "Do not claim that hp.mollview itself performed this conversion or raised the shown error."
+      ]
+    }
+  },
+  {
+    "case": "WFOUR-012",
+    "group": "owner:sta663-sp23",
+    "family": "scalar",
+    "eligible": true,
+    "key": {
+      "operation": "Scalar extraction at val.item() in losses.append(val.item()) inside fit; the native error reports a concrete Python float requirement.",
+      "operand": "val, the scalar float32 traced loss returned by val_grad(b, λ) where val_grad = jax.value_and_grad(loss) and the shown invocation supplies reg_loss.",
+      "explanation": "fit_jit traces fit under jax.jit. val comes from the differentiated reg_loss computation, which evaluates the mean squared residual of model(b, X) = X @ b against y. Calling val.item() attempts to extract a concrete Python scalar during that trace. The value is still abstract, so the float concretization request raises ConcretizationTypeError. The diagnostic's dot_general, subtraction and division entries are upstream loss provenance rather than the operation that raises.",
+      "citations": [
+        "published/flat/W4-PUB-005.txt:4-21 (scalar/float concretization error and loss provenance)",
+        "published/flat/W4-PUB-005.txt:47-52 (model and reg_loss)",
+        "published/flat/W4-PUB-005.txt:58-69 (value_and_grad, val and unique item extraction)",
+        "published/flat/W4-PUB-005.txt:71-73 (jit wrapper and reg_loss invocation)"
+      ],
+      "limits": [
+        "The source spells the extraction as val.item(), not an explicit float(val) call; do not require an unseen float call in application code.",
+        "The error excerpt omits a direct item call frame. Attribute the site from the unique shown extraction and matching scalar/float diagnostic, without claiming a preserved frame that is absent.",
+        "No concrete loss value, iteration number or proposed patch is established or required."
+      ]
+    }
+  },
+  {
+    "case": "WFOUR-013",
+    "group": "owner:usatlas-ml-training",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "The NumPy np.cos call in return np.cos(2 * jnp.arccos(x)) in cheb_2.",
+      "operand": "The traced float32 scalar intermediate 2 * jnp.arccos(x), computed while jax.grad(cheb_2) is evaluated by cheb_2_prime(1.0).",
+      "explanation": "jax.grad traces cheb_2. Its JAX arccos and multiplication produce a traced scalar, but the enclosing NumPy cos requests an ndarray representation through __array__. That conversion is unavailable for the tracer and raises TracerArrayConversionError.",
+      "citations": [
+        "published/flat/W4-PUB-003.txt:4-10 (recorded call, expression and scalar conversion error)",
+        "published/flat/W4-PUB-003.txt:14-22 (imports, function and grad invocation)"
+      ],
+      "limits": [
+        "Do not substitute the arccos derivative at x=1 or a numerical-domain explanation for the recorded NumPy conversion failure.",
+        "No concrete intermediate runtime value or derivative result is established or required."
+      ]
+    }
+  },
+  {
+    "case": "WFOUR-014",
+    "group": "owner:xl0",
+    "family": "dot",
+    "eligible": true,
+    "key": {
+      "operation": "lax.dot_general invoked by jnp.matmul(x, w) at test.py line 9.",
+      "operand": "The contracting dimension of x is 16 (x has shape (4, 16)); the contracting dimension of w is 15 (w has shape (15, 8)). These are x's second/last axis and w's first/penultimate axis.",
+      "explanation": "Matrix multiplication contracts those dimensions, but 16 and 15 differ, so dot_general rejects the contraction before producing y. The operands originate in the two shown jax.random.normal calls with explicit shapes.",
+      "citations": [
+        "Recorded test.py line 9: y = jnp.matmul(x, w).",
+        "Recorded tensor_contractions.py line 254: out = lax.dot_general(...).",
+        "Recorded TypeError: contracting dimensions got (16,) and (15,).",
+        "README.md lines 462-469: x = jax.random.normal(jax.random.PRNGKey(0), (4, 16)); w = jax.random.normal(jax.random.PRNGKey(1), (15, 8))."
+      ],
+      "limits": [
+        "The source is an authored teaching negative, not an unplanned incident.",
+        "The held predecessor is not separately counted; this ruling applies only to the supplied redacted hash.",
+        "No exact random entries or further implementation details are required."
+      ]
+    }
+  },
+  {
+    "case": "WFOUR-015",
+    "group": "owner:ylefay",
+    "family": "reshape",
+    "eligible": true,
+    "key": {
+      "operation": "vals.reshape((t, rho_grid.shape[0], tau_grid.shape[0])) at slice_esjd line 6; JAX raises in _compute_newshape.",
+      "operand": "vals has recorded shape (15, 50), hence 750 elements. The requested shape is (15, 50, 50), hence 37500 elements; t is 15 and both grid lengths are 50.",
+      "explanation": "A reshape must preserve element count, but the request would turn 750 elements into 37500. vals is produced by PKLs[idx]['res'][5].mean(axis=0), with idx=0 from slice_esjd(0, 10, 1). PKLs is populated from selected .pkl files in ./output_dim6_mean0_2000/. The requested last two dimensions come from the two shown 50-point linspace grids, and t comes from PKLs[idx]['res'][5].shape[1].",
+      "citations": [
+        "Cell In[21] line 1 / source cell 19 line 1: slice_esjd(0, 10, 1).",
+        "Cell In[20] lines 4-6 / source cell 18 lines 4-6: t assignment, mean(axis=0), and failing vals.reshape((t, rho_grid.shape[0], tau_grid.shape[0])).",
+        "Recorded TypeError: shape (15, 50) (size 750) into shape (15, 50, 50) (size 37500).",
+        "Source cell 16 lines 1-2: rho_grid and tau_grid each use 50 points.",
+        "Source cell 0 lines 10-16: PKLs entries are pickle-loaded from .pkl files under ./output_dim6_mean0_2000/ excluding names containing merge."
+      ],
+      "limits": [
+        "The packet does not identify which filename is PKLs[0], because os.listdir ordering and the actual directory contents are not supplied.",
+        "Do not infer the full pre-mean shape or the research reason the grid dimension is missing.",
+        "The error is the reshape element-count constraint; neither the selected slice nor axis is shown raising."
+      ]
+    }
+  },
+  {
+    "case": "WFOUR-016",
+    "group": "owner:zhang777-1",
+    "family": "reshape",
+    "eligible": true,
+    "key": {
+      "operation": "shift.reshape(b, d) in modulate, at recorded model.py line 326.",
+      "operand": "shift, passed as shift_msa, has shape (4000, 256) and 1024000 elements; the requested shape is (2000, 256) with 512000 elements.",
+      "explanation": "modulate obtains b and d from b, l, d = x.shape, with x supplied as x_norm, then reaches the reshape branch for shift. The traceback gives both shapes and element counts, which differ by a factor of two; reshape cannot preserve the elements. The visible caller derives shift_msa from jnp.split(c, 6, axis=-1) after the modulation Dense layer and passes it into modulate.",
+      "citations": [
+        "published/flat/W4-PUB-002.txt:26-40 (modulate call, exact reshape and both element counts)",
+        "published/flat/W4-PUB-002.txt:44-58 (b/l/d source and branch containing the reshape)",
+        "published/flat/W4-PUB-002.txt:66-75 (shift_msa production and x_norm caller)"
+      ],
+      "limits": [
+        "The flat does not establish why shift_msa has twice x_norm's batch size, nor the upstream c shape or the complete x_norm shape.",
+        "Do not require a patch, a claim that jnp.split caused the mismatch, or an asserted upstream root cause beyond the visible argument origin.",
+        "The source snapshot is disclosed as relocated; rely on the exact trace-preserved operation and matching local expressions rather than asserting full path/revision identity."
+      ]
+    }
+  },
+  {
+    "case": "WFIVE-001",
+    "group": "owner:andrew-luo1",
+    "family": "reshape",
+    "eligible": true,
+    "key": {
+      "operation": "action.reshape(1) in plot_jacobian_norms, utils/eval_utils.py:65, while assembling x_i for Jacobian inspection.",
+      "operand": "action, a runtime array of shape (12,) and size 12, returned by action, _ = jit_inference_fn(state.obs, key_action) at line 55. The target shape 1 has size 1.",
+      "explanation": "The function attempts to place the policy action into the concatenated state/control vector by reshaping twelve action elements into one element. Reshape cannot change the number of elements, so action.reshape(1) raises before the concatenate, squeeze, or subsequent assertion can complete.",
+      "citations": [
+        "utils/eval_utils.py:53-58: loop, key split, action inference, and environment step",
+        "utils/eval_utils.py:61-67, particularly action.reshape(1) at line 65",
+        "anymal.ipynb code cell 13: jit_inference_fn = jax.jit(make_inference_fn(policy_params))",
+        "Recorded exception: cannot reshape array of shape (12,) (size 12) into shape 1 (size 1)"
+      ],
+      "limits": [
+        "The packet does not print the value of env.sys.nu; do not require an inferred equality between that field and 12.",
+        "The notebook's comments about NaN gradients do not establish the cause of this exception, which is a reshape size mismatch.",
+        "No action values or policy architecture are established."
+      ]
+    }
+  },
+  {
+    "case": "WFIVE-002",
+    "group": "owner:korg-project",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "NumPy np.asarray(u, dtype=np.float64) in cubic_spline, /work/korg/cubic_splines.py:248, invoking the traced array's __array__ conversion.",
+      "operand": "The differentiated ordinates argument u, a traced float64[6] array. It originates in jax.grad(lambda u: cubic_spline(t, u, extrapolate=True)(2.5))(t**2), with t = jnp.linspace(0.0, 5.0, 6).",
+      "explanation": "grad traces u through spline construction. np.asarray attempts to materialize that traced value as a host NumPy array, producing TracerArrayConversionError before spline evaluation. The preceding conversion of t is not the raising operation.",
+      "citations": [
+        "/work/korg/cubic_splines.py:247-248: t_np = np.asarray(t, dtype=np.float64); u_np = np.asarray(u, dtype=np.float64)",
+        "/work/cell_004.py:1: t = jnp.linspace(0.0, 5.0, 6)",
+        "/work/cell_005.py:1: jax.grad(lambda u: cubic_spline(t, u, extrapolate=True)(2.5))(t**2)",
+        "Recorded exception: __array__ called on traced array with shape float64[6]"
+      ],
+      "limits": [
+        "No diagnosis of a later spline-evaluation operation is required; construction raises first.",
+        "PROGFIVE-003 and PROGFIVE-005 share an owner and implementation module; they are distinct failure phases, not independent source groups."
+      ]
+    }
+  },
+  {
+    "case": "WFIVE-003",
+    "group": "owner:korg-project",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "NumPy np.asarray(t_eval) in CubicSpline.numpy_eval, /work/korg/cubic_splines.py:120, invoking the traced scalar's __array__ conversion.",
+      "operand": "t_eval, the traced scalar query point supplied as lambda argument x by jax.grad(lambda x: spline.numpy_eval(x))(2.5). The exception reports float64[].",
+      "explanation": "The spline was constructed before grad from concrete NumPy knot data. grad then traces its evaluation point. numpy_eval attempts to convert that traced point into a NumPy array at line 120, which cannot materialize the autodiff tracer and raises TracerArrayConversionError.",
+      "citations": [
+        "/work/cell_004.py:1-3 and /work/cell_006.py:1: NumPy spline_data and t, u binding",
+        "/work/cell_007.py:1: spline = cubic_spline(t, u, extrapolate=True)",
+        "/work/cell_008.py:1: jax.grad(lambda x: spline.numpy_eval(x))(2.5)",
+        "/work/korg/cubic_splines.py:109,120: def numpy_eval(self, t_eval); t_eval = np.asarray(t_eval)",
+        "Recorded exception: __array__ called on traced array with shape float64[]"
+      ],
+      "limits": [
+        "Do not blame the cached-knot conversions at lines 116-117 or spline construction; the traceback identifies t_eval conversion at line 120.",
+        "The different knot count is not the basis for separate admission; the differentiated operand and raising phase differ from PROGFIVE-003.",
+        "Both spline cases share owner:Korg-project."
+      ]
+    }
+  },
+  {
+    "case": "WFIVE-004",
+    "group": "owner:barrytchiang",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "The inner NumPy np.where(above, f_nodes[-1] + df_dx_nodes[-1] * (x - x_nodes[-1]), f) at /work/pianistpy/numerics/_hermite.py:109.",
+      "operand": "A traced float32 scalar supplied to this NumPy where expression, originating in differentiation of v in the hermite call; v is the third call argument and grad is evaluated on F_NODES. The displayed value operands are the extrapolation expression involving f_nodes[-1] and f.",
+      "explanation": "The inner np.where executes while grad traces the hermite calculation with respect to v. NumPy attempts __array__ conversion of a scalar autodiff tracer and raises TracerArrayConversionError. The ordinary NumPy conversions of the closed-over X_NODES and SLOPES in the calling expression are not the raising site.",
+      "citations": [
+        "/work/cell_006.py:1-3: jax.grad(lambda v: hermite(1.0, np.asarray(X_NODES), v, np.asarray(SLOPES))[0])(F_NODES)",
+        "/work/cell_004.py:1: F_NODES = X_NODES + 0.3 * jnp.sin(X_NODES)",
+        "/work/pianistpy/numerics/_hermite.py:105-110, particularly the inner np.where at line 109",
+        "Recorded exception: __array__ called on traced array with shape float32[]"
+      ],
+      "limits": [
+        "The complete hermite parameter list and the earlier construction of f are absent. Do not require an unstated parameter binding or derivation of f.",
+        "The traceback identifies the inner where expression but does not independently label which converted positional value argument supplied the reported tracer. Do not require a unique argument slot or conversion order.",
+        "No numerical scalar value or selected extrapolation branch is required."
+      ]
+    }
+  },
+  {
+    "case": "WFIVE-005",
+    "group": "owner:hagerpa",
+    "family": "reshape",
+    "eligible": true,
+    "key": {
+      "operation": "x.reshape(num_devices, local_batch, *x.shape[1:]) in pmap_batch._shard, /work/tensordev/kernel/parallel.py:176.",
+      "operand": "The padded array leaf passed by _shard(_pad(x)) at line 179. At the failure it has shape (2, 3), size 6; the requested shape is (4, 1, 3), size 12. num_devices=4 comes from the application call. The leaves originate in the printed batch-loop arrays x and y.",
+      "explanation": "Reshape must preserve element count, but this padded leaf supplies six elements while the sharding target requires twelve. The source path pads by concatenating x with x[:pad], then immediately reshapes it; the recorded padded result still lacks enough elements for the requested shard shape. The failure precedes the mapped addition/sum.",
+      "citations": [
+        "/work/cell_001.py:7-12: batch loop, x/y array construction, and pmap_batch(..., num_devices=4)",
+        "/work/tensordev/kernel/parallel.py:172-176: _pad uses jnp.concatenate([x, x[:pad]], axis=0), and _shard reshapes the result",
+        "/work/tensordev/kernel/parallel.py:178-180: tree_map(lambda x: _shard(_pad(x)), pt)",
+        "Recorded exception: cannot reshape array of shape (2, 3) (size 6) into shape (4, 1, 3) (size 12)"
+      ],
+      "limits": [
+        "The definitions/calculation of pad and local_batch are not printed; do not require an unstated padding formula or exact pad value.",
+        "The traceback names a generic leaf x inside the mapping expression; distinguishing caller x from caller y is not required for this size-mismatch key.",
+        "Do not treat four devices alone as a device-availability failure; the actual recorded exception is the reshape size mismatch."
+      ]
+    }
+  },
+  {
+    "case": "WFIVE-006",
+    "group": "owner:lacroixle",
+    "family": "scalar",
+    "eligible": true,
+    "key": {
+      "operation": "Python int(jnp.sum(x)) at /work/cell_001.py:3, specifically int conversion of the sum while tracing jitted f.",
+      "operand": "The scalar result of jnp.sum(x), reported as a traced float64[] value. It depends on f's dynamic argument x, supplied at the application call by f(jnp.ones(4)).",
+      "explanation": "jax.jit traces f with x represented by a tracer. The sum of x is therefore a traced scalar whose concrete value is unavailable to Python during tracing. int requires a concrete scalar value and raises ConcretizationTypeError at line 3. Execution does not reach range(N).",
+      "citations": [
+        "/work/cell_001.py:1-3: @jax.jit; def f(x); N = int(jnp.sum(x))",
+        "/work/cell_001.py:5,9: for i in range(N); f(jnp.ones(4))",
+        "Recorded exception: abstract tracer float64[] encountered by int while tracing f for jit; concrete value unavailable because it depends on argument x"
+      ],
+      "limits": [
+        "Do not blame range(N) or jnp.sum itself; the traceback identifies int as the raising operation.",
+        "The known call-site expression jnp.ones(4) does not make the traced sum a Python concrete value. No numerical sum value is required by the key.",
+        "No particular wording or dtype-conversion recommendation is required; the native diagnostic's suggested alternatives are not part of the diagnosis.",
+        "AUTHCLEAN-001 and AUTHFIVE-001 are one program from owner:lacroixle, not two independent observations. The original packet remains held."
+      ]
+    }
+  },
+  {
+    "case": "WFIVE-007",
+    "group": "owner:mathdr",
+    "family": "dot",
+    "eligible": true,
+    "key": {
+      "operation": "JAX matmul for iN = inp @ iL in DynamicalModel.predict_given_factorizations, saved mgpr.py:249; its lax.dot_general shape rule raises.",
+      "operand": "The two matmul operands inp and iL have conflicting contracting dimensions: the reported lhs contracting shape is (3,) and rhs contracting shape is (2,). The saved application frame defines iL immediately beforehand as jnp.diag(1 / self.lengthscales) at line 248. The definition of inp is not printed.",
+      "explanation": "The @ operation lowers to dot_general, whose paired contracting dimensions must have equal size. The recorded sizes are 3 and 2, so the operation cannot contract these operands. The application invokes this calculation through model.predict_given_factorizations(input_mean,input_covariance,iK,beta); the notebook declares d=3 and k=2, but that context alone does not establish the missing operand construction or full runtime shapes.",
+      "citations": [
+        "Saved application frame mgpr.py:248-249: iL = jnp.diag(1 / self.lengthscales); iN = inp @ iL",
+        "Saved matmul frame lax_numpy.py:3921-3923: lax.dot_general invocation and contracting-dimension selection",
+        "Recorded exception: dot_general requires contracting dimensions to have the same shape, got (3,) and (2,)",
+        "testing_notebook.ipynb code cells 33,37,39: d=3, k=2, input generation, and model.predict_given_factorizations(input_mean,input_covariance,iK,beta)"
+      ],
+      "limits": [
+        "The historical mgpr.py module is absent; only the application statements preserved in the saved traceback are available.",
+        "The complete runtime shapes/ranks of inp, iL, and self.lengthscales are not printed. The contracting shapes (3,) and (2,) are not the full operand shapes.",
+        "The creation and exact mathematical meaning of inp are unknown. Do not infer that it equals a particular training-data or input-mean expression.",
+        "The formation and indexing of self.lengthscales are unknown. Do not assert that k=2 caused its shape, or require an unshown transpose, batching mistake, or parameter binding.",
+        "No particular explanatory phrase is required; identifying the supported operation, unequal contraction sizes, displayed iL origin, and missing details is sufficient."
+      ]
+    }
+  },
+  {
+    "case": "WFIVE-008",
+    "group": "owner:teddytennant",
+    "family": "array",
+    "eligible": true,
+    "key": {
+      "operation": "np.asarray(x, dtype=np.float32) in train._as_f32, /work/train/__init__.py:234, reached by muon_update's _as_f32(grad) at line 288.",
+      "operand": "The grad input to muon_update, passed from jitted mu's argument g to _as_f32 as x. It is a traced float32[3,2] array. Its call-site origin is grad = _j32(MUON_3X2), where _j32 uses jnp.asarray and MUON_3X2 is the printed 3-by-2 NumPy array.",
+      "explanation": "jax.jit(mu)(grad, momentum) traces g. train.muon_update immediately sends that traced grad to a NumPy conversion, which attempts to obtain a concrete host array and raises TracerArrayConversionError. This occurs before momentum conversion or the later shape comparison.",
+      "citations": [
+        "/work/cell_002.py:1: MUON_3X2 = np.array(..., dtype=np.float32)",
+        "/work/cell_004.py:1-2: _j32 returns jnp.asarray(x, dtype=jnp.float32)",
+        "/work/cell_005.py:1,4-5,8: grad construction, mu(g, m), train.muon_update(g, m, **MUON_KW), and jax.jit(mu)(grad, momentum)",
+        "/work/train/__init__.py:233-234,288-291: _as_f32 conversion and call order",
+        "Recorded exception: __array__ called on traced array with shape float32[3,2], depending on argument g"
+      ],
+      "limits": [
+        "The failure does not establish a grad/momentum shape mismatch; the conversion raises first.",
+        "No diagnosis of later muon-update algebra is required."
+      ]
+    }
+  }
+]

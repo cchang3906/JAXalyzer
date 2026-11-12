@@ -1,0 +1,39 @@
+{
+  "baseline": {
+    "archive": "gemma-12b-hints-90-baseline.zip",
+    "sha256": "60362ee7ca5515024711c5ec1cdaa42f3ba1198a7e31648b034ac76b528e8c5b",
+    "seconds": 448.5,
+    "manifest": "eb0fc34234767fa1b42ddc87be420211eb4b67cb19320bbaea60797789eb25bd",
+    "gpus": [
+      "NVIDIA L4",
+      "NVIDIA L4",
+      "NVIDIA L4",
+      "NVIDIA L4"
+    ]
+  },
+  "earlier_reviewed": {
+    "archive": "gemma-12b-hints-90-analyzer.zip",
+    "sha256": "163ffcc25a9c820e84696561b44d1cea12b0e07384cf6207f6042204a2c61647",
+    "seconds": 453.3,
+    "manifest": "d3039df072d4f943d14fe25d25682423ae611d79bf0bef60cca20c5a8fc22a56",
+    "gpus": [
+      "NVIDIA L4",
+      "NVIDIA L4",
+      "NVIDIA L4",
+      "NVIDIA L4"
+    ]
+  },
+  "expanded_as_run": {
+    "archive": "gemma-12b-source-v3-analyzer.zip",
+    "sha256": "b1a037ef61ef8d431d315d3f4eb972c026813651c752b4106eb6bb15168d07a1",
+    "seconds": 496.5,
+    "manifest": "b48c56bdc9442b391681738ac8782616175beabe16fa7c17e83108b3a6326501",
+    "gpus": [
+      "NVIDIA L4",
+      "NVIDIA L4",
+      "NVIDIA L4",
+      "NVIDIA L4"
+    ]
+  },
+  "model": "/kaggle/input/models/google/gemma-4/other/gemma-4-12b-it-qat-w4a16-ct/2"
+}

@@ -1,0 +1,22 @@
+{
+ "id": "cchang3906/gemma-12b-jax-90-baseline",
+ "title": "Gemma 12B JAX 90 Baseline",
+ "code_file": "gemma-12b-jax-90-baseline.ipynb",
+ "language": "python",
+ "kernel_type": "notebook",
+ "is_private": true,
+ "enable_gpu": true,
+ "enable_internet": false,
+ "competition_sources": [
+  "gemma-4-developer-agent"
+ ],
+ "dataset_sources": [
+  "metric/gemma-4-developer-agent-wheelhouse"
+ ],
+ "model_sources": [
+  "google/gemma-4/Other/gemma-4-12b-it-qat-w4a16-ct/2"
+ ],
+ "docker_image": "gcr.io/kaggle-private-byod/python@sha256:37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461",
+ "docker_image_pinning_type": "original",
+ "machine_shape": "NvidiaL4"
+}

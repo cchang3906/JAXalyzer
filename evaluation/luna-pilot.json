@@ -1,0 +1,213 @@
+{
+  "all": {
+    "n": 17,
+    "flat_correct": 10,
+    "analyzer_correct": 14,
+    "unavailable_arms": 0,
+    "paired_outcomes": {
+      "analyzer_only": 4,
+      "neither_correct": 3,
+      "both_correct": 10
+    }
+  },
+  "changed": {
+    "n": 15,
+    "flat_correct": 9,
+    "analyzer_correct": 13,
+    "unavailable_arms": 0,
+    "paired_outcomes": {
+      "analyzer_only": 4,
+      "neither_correct": 2,
+      "both_correct": 9
+    }
+  },
+  "unchanged": {
+    "n": 2,
+    "flat_correct": 1,
+    "analyzer_correct": 1,
+    "unavailable_arms": 0,
+    "paired_outcomes": {
+      "both_correct": 1,
+      "neither_correct": 1
+    }
+  },
+  "both_answers": {
+    "n": 17,
+    "flat_correct": 10,
+    "analyzer_correct": 14,
+    "unavailable_arms": 0,
+    "paired_outcomes": {
+      "analyzer_only": 4,
+      "neither_correct": 3,
+      "both_correct": 10
+    }
+  },
+  "rows": [
+    {
+      "candidate_id": "NB-002",
+      "relationship": true,
+      "flat": "partial",
+      "analyzer": "correct",
+      "outcome": "analyzer_only",
+      "family": "scalar",
+      "owner_group": "owner:al-jshen"
+    },
+    {
+      "candidate_id": "NB-011",
+      "relationship": true,
+      "analyzer": "partial",
+      "flat": "partial",
+      "outcome": "neither_correct",
+      "family": "shape-dot (exploratory)",
+      "owner_group": "owner:choltz95"
+    },
+    {
+      "candidate_id": "NB-013",
+      "relationship": true,
+      "analyzer": "correct",
+      "flat": "correct",
+      "outcome": "both_correct",
+      "family": "array",
+      "owner_group": "owner:compwa"
+    },
+    {
+      "candidate_id": "NB-014",
+      "relationship": true,
+      "analyzer": "correct",
+      "flat": "correct",
+      "outcome": "both_correct",
+      "family": "array",
+      "owner_group": "owner:compwa"
+    },
+    {
+      "candidate_id": "NB-015",
+      "relationship": true,
+      "flat": "partial",
+      "analyzer": "partial",
+      "outcome": "neither_correct",
+      "family": "array",
+      "owner_group": "owner:cpehle"
+    },
+    {
+      "candidate_id": "NB-018",
+      "relationship": true,
+      "flat": "partial",
+      "analyzer": "correct",
+      "outcome": "analyzer_only",
+      "family": "array",
+      "owner_group": "owner:envfluids"
+    },
+    {
+      "candidate_id": "NB-019",
+      "relationship": true,
+      "flat": "incorrect",
+      "analyzer": "correct",
+      "outcome": "analyzer_only",
+      "family": "array",
+      "owner_group": "owner:graphiq-dev"
+    },
+    {
+      "candidate_id": "NB-025",
+      "relationship": true,
+      "flat": "correct",
+      "analyzer": "correct",
+      "outcome": "both_correct",
+      "family": "array",
+      "owner_group": "owner:jskdr"
+    },
+    {
+      "candidate_id": "NB-028",
+      "relationship": true,
+      "analyzer": "correct",
+      "flat": "correct",
+      "outcome": "both_correct",
+      "family": "array",
+      "owner_group": "owner:lukasottenhof"
+    },
+    {
+      "candidate_id": "NB-037",
+      "relationship": true,
+      "analyzer": "correct",
+      "flat": "correct",
+      "outcome": "both_correct",
+      "family": "array",
+      "owner_group": "owner:peiyong-addwater"
+    },
+    {
+      "candidate_id": "NB-042",
+      "relationship": true,
+      "flat": "correct",
+      "analyzer": "correct",
+      "outcome": "both_correct",
+      "family": "scalar",
+      "owner_group": "owner:sandeshkatakam"
+    },
+    {
+      "candidate_id": "NB-043",
+      "relationship": true,
+      "flat": "partial",
+      "analyzer": "correct",
+      "outcome": "analyzer_only",
+      "family": "shape-dot (exploratory)",
+      "owner_group": "owner:shawonashraf"
+    },
+    {
+      "candidate_id": "NB-048",
+      "relationship": true,
+      "flat": "correct",
+      "analyzer": "correct",
+      "outcome": "both_correct",
+      "family": "shape-dot (exploratory)",
+      "owner_group": "owner:sil-pixel"
+    },
+    {
+      "candidate_id": "NB-049",
+      "relationship": true,
+      "analyzer": "correct",
+      "flat": "correct",
+      "outcome": "both_correct",
+      "family": "shape-dot (exploratory)",
+      "owner_group": "owner:sil-pixel"
+    },
+    {
+      "candidate_id": "PR-001",
+      "relationship": false,
+      "analyzer": "correct",
+      "flat": "correct",
+      "outcome": "both_correct",
+      "family": "scalar",
+      "owner_group": "owner:ignaciomagana"
+    },
+    {
+      "candidate_id": "PR-002",
+      "relationship": false,
+      "analyzer": "partial",
+      "flat": "partial",
+      "outcome": "neither_correct",
+      "family": "array",
+      "owner_group": "owner:edithatogo"
+    },
+    {
+      "candidate_id": "PR-003",
+      "relationship": true,
+      "flat": "correct",
+      "analyzer": "correct",
+      "outcome": "both_correct",
+      "family": "array",
+      "owner_group": "owner:jobovy"
+    }
+  ],
+  "timing": {
+    "elapsed_seconds": 24.159,
+    "answered_median_seconds": {
+      "flat": 6.894,
+      "analyzer": 9.371
+    },
+    "provider_usage": {
+      "input_tokens": 69648,
+      "output_tokens": 11524,
+      "total_tokens": 81172
+    }
+  },
+  "distinct_owner_groups": 15
+}
